@@ -10,9 +10,9 @@
 .equ OPTIONAL_TAG_FLAG, 1
 
 #ifdef __ELF__
-    #define AUTO_KLUDGE, 0
+    #define AUTO_KLUDGE 0
 #else
-    #define AUTO_KLUDGE, 0x10000
+    #define AUTO_KLUDGE 0x10000
 #endif
 
 header_start:
@@ -30,7 +30,7 @@ address_tag_start:
     .short OPTIONAL_TAG_FLAG /* flags */
     .long address_tag_end - address_tag_start /* size */
     .long header_start /* header_addr */
-    .long entry /* load_addr */
+    .long _start /* load_addr */
     .long data_end /* load_end_addr */
     .long bss_end /* bss_end_addr */
 address_tag_end:
@@ -39,7 +39,7 @@ entry_address_tag_start:
     .short 3 /* type */
     .short OPTIONAL_TAG_FLAG
     .long entry_address_tag_end - entry_address_tag_start
-    .long entry
+    .long _start
 entry_address_tag_end:
 #endif 
 
@@ -51,7 +51,14 @@ header_end:
 
 
 .section .text
-entry:
+.type main, @function
+.globl main
+
+.type _start, @function
+.globl _start
+_start:
+    call main
+    hlt
 
 .section .data
 data_end:
@@ -64,3 +71,4 @@ stack_bottom:
 stack_top:
 
 bss_end:
+
