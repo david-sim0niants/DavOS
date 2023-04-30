@@ -21,6 +21,7 @@ set(CMAKE_C_FLAGS "-fno-ident -ffreestanding -fno-exceptions -nostdlib -nostdinc
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 include(LinkElfImage)
 
+include_directories(include)
 add_subdirectory(arch)
 add_subdirectory(kernel)
 add_subdirectory(boot)

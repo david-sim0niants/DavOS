@@ -2,7 +2,7 @@
 
 .section .multiboot_header
 
-.equ MAGIC, 0xE85250D6 
+.equ MAGIC, 0xE85250D6
 .equ ARCHITECTURE, 0
 .equ HEADER_LENGTH, header_end - header_start
 .equ CHECKSUM, -(MAGIC + ARCHITECTURE + HEADER_LENGTH)
@@ -10,44 +10,63 @@
 .equ OPTIONAL_TAG_FLAG, 1
 
 #ifdef __ELF__
-    #define AUTO_KLUDGE 0
+	#define AUTO_KLUDGE 0
 #else
-    #define AUTO_KLUDGE 0x10000
+	#define AUTO_KLUDGE 0x10000
 #endif
 
 header_start:
-    .align 4
-    .long MAGIC
-    .long ARCHITECTURE
-    .long HEADER_LENGTH
-    .long CHECKSUM
+	.align 4
+	.long MAGIC
+	.long ARCHITECTURE
+	.long HEADER_LENGTH
+	.long CHECKSUM
 
-    .align 8
+	.align 8
 
 #ifndef __ELF__
 address_tag_start:
-    .short 2 /* type */
-    .short OPTIONAL_TAG_FLAG /* flags */
-    .long address_tag_end - address_tag_start /* size */
-    .long header_start /* header_addr */
-    .long _start /* load_addr */
-    .long data_end /* load_end_addr */
-    .long bss_end /* bss_end_addr */
+	.short 2 /* type */
+	.short OPTIONAL_TAG_FLAG /* flags */
+	.long address_tag_end - address_tag_start /* size */
+	.long header_start /* header_addr */
+	.long _start /* load_addr */
+	.long data_end /* load_end_addr */
+	.long bss_end /* bss_end_addr */
 address_tag_end:
 
 entry_address_tag_start:
-    .short 3 /* type */
-    .short OPTIONAL_TAG_FLAG
-    .long entry_address_tag_end - entry_address_tag_start
-    .long _start
+	.short 3 /* type */
+	.short OPTIONAL_TAG_FLAG
+	.long entry_address_tag_end - entry_address_tag_start
+	.long _start
 entry_address_tag_end:
-#endif 
+#endif
 
-    .short 0 /* terminating tag type */
-    .short 0 /* terminating tag flags */
-    .long  8 /* terminating tag size */
+	.short 0 /* terminating tag type */
+	.short 0 /* terminating tag flags */
+	.long  8 /* terminating tag size */
 
 header_end:
+
+
+.section .bss
+	.align 16
+stack_bottom: # the stack
+	.skip 1 << 16
+stack_top:
+
+bss_end:
+
+
+.section .data
+
+.type p_multiboot_info, @object
+.globl p_multiboot_info
+p_multiboot_info:
+	# pointer to multiboot info or NULL if we're not booted via multiboot
+	.long 0
+data_end:
 
 
 .section .text
@@ -57,18 +76,20 @@ header_end:
 .type _start, @function
 .globl _start
 _start:
-    call main
-    hlt
+	cli
+	mov $stack_top, %esp # setup stack pointer
+	call get_multiboot_info
+	call main
+	hlt
 
-.section .data
-data_end:
 
-.section .bss
+.equ MULTIBOOT2_MAGIC, 0x36d76289
 
-    .align 16
-stack_bottom:
-    .skip 1 << 16
-stack_top:
-
-bss_end:
+get_multiboot_info:
+	cmp $MULTIBOOT2_MAGIC, %eax # compare EAX value with the magic number
+	je .L_booted_via_multiboot # avoid setting EBX value to zero
+	xor %ebx, %ebx
+.L_booted_via_multiboot: # assign the pointer or NULL to p_multiboot_info
+	mov %ebx, p_multiboot_info
+	ret
 
