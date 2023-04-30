@@ -11,7 +11,8 @@ else ()
 	message(FATAL_ERROR "Specified architecture is neither 32, nor 64 bit.")
 endif ()
 
-message(STATUS "Target architecture: ${CMAKE_SYSTEM_PROCESSOR} ${ARCH_BITNESS}bit")
+message(STATUS
+	"Target architecture: ${CMAKE_SYSTEM_PROCESSOR} ${ARCH_BITNESS}bit")
 
 
 set(CMAKE_C_FLAGS "-fno-ident -ffreestanding -fno-exceptions -nostdlib -nostdinc -fno-stack-protector")

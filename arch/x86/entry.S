@@ -24,7 +24,7 @@ header_start:
 
     .align 8
 
-#ifdef __ELF__
+#ifndef __ELF__
 address_tag_start:
     .short 2 /* type */
     .short OPTIONAL_TAG_FLAG /* flags */
