@@ -1,5 +1,5 @@
 set(TARGET_NAME kernel_arch_x86_objs)
-add_library(${TARGET_NAME} OBJECT entry.S)
+add_library(${TARGET_NAME} OBJECT entry.S init.c)
 
 
 set(TARGET_NAME kernel_static)
@@ -22,3 +22,4 @@ add_custom_command(
 
 add_custom_target(${TARGET_NAME} ALL DEPENDS ${KERNEL_PATH})
 
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)

@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <stdint.h>
 
 static bool check_cpuid();
 
@@ -9,7 +10,7 @@ void arch_init()
 
 static bool check_cpuid()
 {
-	unsigned int curr_flags, prev_flags;
+	uint32_t curr_flags, prev_flags;
 	asm ( 	"pushf 			\n"
 		"pop %%eax 		\n"
 		"mov %%eax, %%ecx 	\n"
