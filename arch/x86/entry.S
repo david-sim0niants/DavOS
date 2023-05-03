@@ -73,13 +73,17 @@ data_end:
 .type main, @function
 .globl main
 
+.type arch_init, @function
+.globl arch_init
+
 .type _start, @function
 .globl _start
 _start:
 	cli
 	mov $stack_top, %esp # setup stack pointer
 	call get_multiboot_info
-	call main
+	call arch_init
+	# call main
 	hlt
 
 

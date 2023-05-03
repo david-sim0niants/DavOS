@@ -17,9 +17,9 @@ message(STATUS "Target architecture: ${CONFIG_ARCH} ${CONFIG_ARCH_BITNESS}bit")
 
 
 # Set compiler flags
-set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -x assembler-with-cpp")
-set(CMAKE_C_FLAGS "-fno-ident -ffreestanding -fno-exceptions -nostdlib -nostdinc -fno-stack-protector -m${CONFIG_ARCH_BITNESS}")
-
+set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -x assembler-with-cpp --no-pic --freestanding --no-standard-libraries --no-standard-includes --no-stack-protector")
+set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fno-pic -fno-ident -ffreestanding -fno-exceptions -nostdlib -nostdinc -fno-stack-protector")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-pic -ffreestanding -fno-exceptions -fno-rtti -nostdlib -nostdinc")
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 

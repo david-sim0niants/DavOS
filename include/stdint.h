@@ -1,9 +1,7 @@
 #ifndef __STDINT_H__
 #define __STDINT_H__
 
-#include <config.h>
-
-#if defined(CONFIG_ARCH_BITNESS) && CONFIG_ARCH_BITNESS == 64
+#if __SIZEOF_POINTER__ == 8
 	typedef signed char 	int8_t;
 	typedef short 		int16_t;
 	typedef int 		int32_t;
@@ -12,7 +10,7 @@
 	typedef unsigned short 	uint16_t;
 	typedef unsigned int 	uint32_t;
 	typedef unsigned long 	uint64_t;
-#elif defined(CONFIG_ARCH_BITNESS) && CONFIG_ARCH_BITNESS == 32
+#elif __SIZEOF_POINTER__ == 4
 	typedef signed char 	int8_t;
 	typedef int 		int16_t;
 	typedef long 		int32_t;
