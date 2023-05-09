@@ -23,6 +23,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-pic -ffreestanding -fno-exceptions 
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
+set(CONFIG_STACK_SIZE 0x2000 CACHE STRING "Stack size.")
+
+
+# Include include/ and generated include/ directories.
 include_directories(include)
 include_directories(${CMAKE_BINARY_DIR}/generated/include)
 
@@ -30,6 +34,7 @@ add_subdirectory(arch)
 add_subdirectory(kernel)
 add_subdirectory(boot)
 
-# Configure the config header file
+# Configure config.h.in file.
+set(CONFIG_ARCH_MACRO ARCH_${CONFIG_ARCH})
 configure_file(${CMAKE_SOURCE_DIR}/include/config.h.in
 	${CMAKE_BINARY_DIR}/generated/include/config.h)

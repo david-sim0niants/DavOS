@@ -4,8 +4,8 @@
 long vga_text_writeb(struct vga_text *vga_text, char b)
 {
 	long byte_offset = vga_text->curr_offset * 2;
-	VGA_TEXT_BUFFER_START[byte_offset] = vga_text->curr_color;
 	VGA_TEXT_BUFFER_START[byte_offset + 1] = b;
+	VGA_TEXT_BUFFER_START[byte_offset] = vga_text->curr_color;
 	return ++vga_text->curr_offset;
 }
 
@@ -25,8 +25,8 @@ long vga_text_write_lc(const char *buf_data, long buf_size,
 		buf_size = VGA_TEXT_BUFFER_SIZE - offset;
 
 	for (long i = 0, byte_i = offset * 2; i < buf_size; ++i) {
-		VGA_TEXT_BUFFER_START[byte_i++] = color;
 		VGA_TEXT_BUFFER_START[byte_i++] = buf_data[i];
+		VGA_TEXT_BUFFER_START[byte_i++] = color;
 	}
 
 	return offset + buf_size;

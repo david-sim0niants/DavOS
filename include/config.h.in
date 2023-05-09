@@ -1,6 +1,12 @@
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
 
+#define ARCH_UNKNOWN 	0
+#define ARCH_i386 	1
+#define ARCH_x86_64 	2
+
+#cmakedefine CONFIG_ARCH @CONFIG_ARCH_MACRO@
 #cmakedefine CONFIG_ARCH_BITNESS @CONFIG_ARCH_BITNESS@
+#cmakedefine CONFIG_STACK_SIZE @CONFIG_STACK_SIZE@
 
 #endif

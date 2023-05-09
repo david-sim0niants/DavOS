@@ -1,3 +1,4 @@
+# Build 'cross-architecture' part of the kernel as a static library.
 set(TARGET_NAME kernel_cross)
 
 add_library(${TARGET_NAME} STATIC main.c)

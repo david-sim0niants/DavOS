@@ -1,5 +1,5 @@
-#ifndef ARCH__VGA_TEXT_H__
-#define ARCH__VGA_TEXT_H__
+#ifndef _ARCH__VGA_TEXT_H__
+#define _ARCH__VGA_TEXT_H__
 
 
 #define VGA_TEXT_BUFFER_START ((char *)0xB8000)

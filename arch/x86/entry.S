@@ -50,15 +50,6 @@ entry_address_tag_end:
 header_end:
 
 
-.section .bss
-	.align 16
-stack_bottom: # the stack
-	.skip 1 << 16
-stack_top:
-
-bss_end:
-
-
 .section .data
 
 .type p_multiboot_info, @object
@@ -69,9 +60,14 @@ p_multiboot_info:
 data_end:
 
 
+#include <arch/config.h>
+
 .section .text
-.type main, @function
-.globl main
+
+# address of the function that starts ready to go kernel
+.equ kernel_start, CONFIG_ARCH_x86_KERNEL_START
+# initial stack grows below the address where kernel start function will be located
+.equ stack_top, CONFIG_ARCH_x86_KERNEL_START
 
 .type arch_init, @function
 .globl arch_init
@@ -81,10 +77,9 @@ data_end:
 _start:
 	cli
 	mov $stack_top, %esp # setup stack pointer
-	call get_multiboot_info
-	call arch_init
-	# call main
-	hlt
+	call get_multiboot_info # get multiboot info
+	call arch_init # init the CPU
+	jmp kernel_start # jump onto kernel
 
 
 .equ MULTIBOOT2_MAGIC, 0x36d76289
@@ -97,3 +92,5 @@ get_multiboot_info:
 	mov %ebx, p_multiboot_info
 	ret
 
+.section .kernel_start_placeholder, "ax", @progbits
+	hlt # placeholder code for the kernel start

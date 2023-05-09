@@ -6,24 +6,22 @@ SECTIONS
 
 	.multiboot_header : ALIGN(4K)
 	{
-		KEEP(*(.multiboot_header.i386))
+		KEEP(*(.multiboot_header))
 	}
 
-	.text.i386 :
+	.text :
 	{
-		*(.text.i386)
+		*(.text)
 	}
 
-	PROVIDE(_start = ADDR(.text.i386));
-
-	.data.i386 : ALIGN(4K)
+	.data : ALIGN(4K)
 	{
-		*(.data.i386)
+		*(.data)
 	}
 
-	.rodata.i386 : ALIGN(4K)
+	.rodata : ALIGN(4K)
 	{
-		*(.rodata.i386)
+		*(.rodata)
 	}
 
 	PROVIDE(__stack_size = DEFINED(__stack_size) ? __stack_size : 8K);
@@ -36,25 +34,15 @@ SECTIONS
 		. += __stack_size;
 	}
 
-	.text : ALIGN(4K)
+	.kernel_start_placeholder :
 	{
-		*(.text)
-	}
-
-	.data : ALIGN(4K)
-	{
-		*(.data)
-	}
-
-	.bss (NOLOAD) : ALIGN(4K)
-	{
-		*(.bss)
+		KEEP(*(.kernel_start_placeholder))
 	}
 
 	/DISCARD/ :
 	{
-		*(.note.gnu.property)
-		*(.comment)
+        	*(.note.*)
+        	*(.comment)
 		*(.eh_frame)
 	}
 }
