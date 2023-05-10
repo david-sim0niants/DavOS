@@ -31,6 +31,9 @@ else ()
 	set(TARGET_FORMAT elf-i386)
 endif ()
 
+set(DUMP_SECTION_i386_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/scripts/dump_sections_i386.sh)
+set(SECTION_MEMLAYOUT ${CMAKE_CURRENT_SOURCE_DIR}/scripts/section_memlayout.S)
+
 # This custom commands creates a boot directory where the kernel will be located
 # at, then runs a script that dumps necessary sections from the i386 image and
 # converts them into the target format. After that the linker links the dumped
@@ -41,8 +44,8 @@ endif ()
 add_custom_command(
 	OUTPUT ${KERNEL_PATH}
 	COMMAND ${CMAKE_COMMAND} -E make_directory ${KERNEL_DIR}
-	COMMAND sh -c "${CMAKE_CURRENT_SOURCE_DIR}/scripts/dump_sections_i386.sh ${KERNEL_ARCH_i386_IMAGE} ${TARGET_FORMAT} | xargs ${CMAKE_LINKER} --whole-archive $<TARGET_FILE:kernel_cross> $<TARGET_FILE:kernel_arch_x86> -o ${KERNEL_PATH} -T ${LINKER_SCRIPT} --defsym __stack_size=${CONFIG_STACK_SIZE} --defsym __kernel_start=${CONFIG_ARCH_x86_KERNEL_START}"
-	DEPENDS ${KERNEL_ARCH_i386_IMAGE} kernel_arch_i386 kernel_arch_x86 kernel_cross ${LINKER_SCRIPT}
+	COMMAND sh -c "${DUMP_SECTION_i386_SCRIPT} ${KERNEL_ARCH_i386_IMAGE} ${TARGET_FORMAT} ${CMAKE_C_COMPILER} | xargs ${CMAKE_LINKER} --whole-archive $<TARGET_FILE:kernel_cross> $<TARGET_FILE:kernel_arch_x86> -o ${KERNEL_PATH} -T ${LINKER_SCRIPT} --defsym __stack_size=${CONFIG_STACK_SIZE} --defsym __kernel_start=${CONFIG_ARCH_x86_KERNEL_START}"
+	DEPENDS ${KERNEL_ARCH_i386_IMAGE} kernel_arch_i386 kernel_arch_x86 kernel_cross ${LINKER_SCRIPT} ${DUMP_SECTION_i386_SCRIPT} ${SECTION_MEMLAYOUT}
 	COMMENT "Linking uncompressed kernel image"
 	VERBATIM)
 
