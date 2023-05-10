@@ -4,8 +4,8 @@
 long vga_text_writeb(struct vga_text *vga_text, char b)
 {
 	long byte_offset = vga_text->curr_offset * 2;
-	VGA_TEXT_BUFFER_START[byte_offset + 1] = b;
 	VGA_TEXT_BUFFER_START[byte_offset] = vga_text->curr_color;
+	VGA_TEXT_BUFFER_START[byte_offset + 1] = b;
 	return ++vga_text->curr_offset;
 }
 

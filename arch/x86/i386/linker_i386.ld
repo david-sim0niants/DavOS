@@ -4,12 +4,14 @@ SECTIONS
 {
 	. = 1M;
 
-	.multiboot_header : ALIGN(4K)
+	.multiboot_header BLOCK(4K) : ALIGN(4K)
 	{
 		KEEP(*(.multiboot_header))
 	}
 
-	.text :
+	. = 1M + 4K;
+
+	.text : ALIGN(4K)
 	{
 		*(.text)
 	}
