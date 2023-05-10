@@ -79,7 +79,11 @@ _start:
 	mov $stack_top, %esp # setup stack pointer
 	call get_multiboot_info # get multiboot info
 	call arch_init # init the CPU
+	test %eax, %eax
+	jnz .L_start_fail
 	jmp kernel_start # jump onto kernel
+.L_start_fail:
+	hlt
 
 
 .equ MULTIBOOT2_MAGIC, 0x36d76289
