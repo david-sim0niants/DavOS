@@ -60,14 +60,14 @@ p_multiboot_info:
 data_end:
 
 
-#include <arch/config.h>
+#include <config.h>
 
 .section .text
 
-# address of the function that starts ready to go kernel
-.equ kernel_start, CONFIG_ARCH_x86_KERNEL_START
+# virtual memory address of the function that starts the ready to go kernel
+.globl __ldconfig__KERNEL_TEXT_START_VMA
 # initial stack grows below the address where kernel start function will be located
-.equ stack_top, CONFIG_ARCH_x86_KERNEL_START
+.globl __ldconfig__STACK_TOP
 
 .type arch_init, @function
 .globl arch_init
@@ -76,12 +76,20 @@ data_end:
 .globl _start
 _start:
 	cli
-	mov $stack_top, %esp # setup stack pointer
+	mov (__ldconfig__STACK_TOP), %esp # setup stack pointer
 	call get_multiboot_info # get multiboot info
 	call arch_init # init the CPU
 	test %eax, %eax
 	jnz .L_start_fail
-	jmp kernel_start # jump onto kernel
+
+#if CONFIG_ARCH == x86_64
+	.code64
+	jmpq *__ldconfig__KERNEL_TEXT_START_VMA # jump onto kernel
+#else
+	jmpl *__ldconfig__KERNEL_TEXT_START_VMA # jump onto kernel
+#endif
+	.code32
+
 .L_start_fail:
 	hlt
 

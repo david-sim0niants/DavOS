@@ -1,4 +1,4 @@
-#include <arch/vga_text.h>
+#include <x86/vga_text.h>
 
 
 long vga_text_writeb(struct vga_text *vga_text, char b)

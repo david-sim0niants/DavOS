@@ -2,7 +2,7 @@
 set(TARGET_NAME kernel_arch_i386_objs)
 set(LINKER_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/linker_i386.ld)
 
-add_library(${TARGET_NAME} OBJECT entry.S init.c ../vga_text.c)
+add_library(${TARGET_NAME} OBJECT entry.S ldconfig.S init.c ../vga_text.c)
 if (${CONFIG_ARCH} STREQUAL x86_64)
 	target_compile_options(${TARGET_NAME} PRIVATE -m32)
 endif ()
@@ -20,7 +20,7 @@ set(KERNEL_ARCH_i386_IMAGE ${TARGET_OUTPUT_FILE})
 # Custom command that links object files together and forms the i386 image.
 add_custom_command(
 	OUTPUT ${TARGET_OUTPUT_FILE}
-	COMMAND ${CMAKE_LINKER} $<TARGET_OBJECTS:kernel_arch_i386_objs> -T ${LINKER_SCRIPT} -melf_i386 --gc-sections -o ${TARGET_OUTPUT_FILE} --defsym __stack_size=${CONFIG_STACK_SIZE} --defsym __kernel_start=${CONFIG_ARCH_x86_KERNEL_START}
+	COMMAND ${CMAKE_LINKER} $<TARGET_OBJECTS:kernel_arch_i386_objs> -T ${LINKER_SCRIPT} -melf_i386 --gc-sections -o ${TARGET_OUTPUT_FILE} --defsym __stack_size=${CONFIG_STACK_SIZE}
 	DEPENDS kernel_arch_i386_objs $<TARGET_OBJECTS:kernel_arch_i386_objs> ${LINKER_SCRIPT}
 	COMMENT "Linking ${TARGET_OUTPUT_FILE_NAME}"
 	VERBATIM COMMAND_EXPAND_LISTS)

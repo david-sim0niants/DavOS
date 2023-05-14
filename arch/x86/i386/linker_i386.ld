@@ -16,25 +16,29 @@ SECTIONS
 		*(.text)
 	}
 
-	.data : ALIGN(4K)
-	{
-		*(.data)
-	}
-
 	.rodata : ALIGN(4K)
 	{
 		*(.rodata)
 	}
 
-	PROVIDE(__stack_size = DEFINED(__stack_size) ? __stack_size : 8K);
-	PROVIDE(__kernel_start = DEFINED(__kernel_start) ? __kernel_start : 2M);
-
-	. = __kernel_start - __stack_size;
-	.stack BLOCK(__stack_size) (NOLOAD) : ALIGN(4K)
+	.ldconfig :
 	{
-		ASSERT(((. + __stack_size) <= __kernel_start),"Error: i386 image is too large and leaves no room for the stack. Increase the __kernel_start.");
-		. += __stack_size;
+		KEEP(*(.ldconfig))
 	}
+
+	.data : ALIGN(4K)
+	{
+		*(.data)
+	}
+
+	PROVIDE(__STACK_SIZE = DEFINED(__STACK_SIZE) ? __STACK_SIZE : 8K);
+
+	.stack BLOCK(__STACK_SIZE) (NOLOAD) : ALIGN(4K)
+	{
+		. += __STACK_SIZE;
+	}
+
+	PROVIDE(__STACK_TOP = .);
 
 	.kernel_start_placeholder :
 	{

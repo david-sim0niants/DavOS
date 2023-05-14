@@ -1,5 +1,5 @@
 __attribute__((section(".text")))
-int main(void)
+void main(void)
 {
-	return 0;
+	asm volatile ("hlt");
 }

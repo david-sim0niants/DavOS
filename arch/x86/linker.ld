@@ -4,7 +4,7 @@ SECTIONS
 {
 	. = 1M;
 
-	.multiboot_header BLOCK (4K) : ALIGN(4K)
+	.multiboot_header.i386 BLOCK (4K) : ALIGN(4K)
 	{
 		KEEP(*(.multiboot_header.i386))
 	}
@@ -18,40 +18,103 @@ SECTIONS
 
 	PROVIDE(_start = ADDR(.text.i386));
 
-	.data.i386 : ALIGN(4K)
-	{
-		*(.data.i386)
-	}
-
 	.rodata.i386 : ALIGN(4K)
 	{
 		*(.rodata.i386)
 	}
 
-	PROVIDE(__stack_size = DEFINED(__stack_size) ? __stack_size : 8K);
-	PROVIDE(__kernel_start = DEFINED(__kernel_start) ? __kernel_start : 2M);
-
-	. = __kernel_start - __stack_size;
-	.stack BLOCK(__stack_size) (NOLOAD) : ALIGN(4K)
+	.ldconfig.i386 :
 	{
-		ASSERT(((. + __stack_size) <= __kernel_start),"Error: i386 image is too large and leaves no room for the stack. Increase the __kernel_start.");
-		. += __stack_size;
+		PROVIDE(__ldconfig__STACK_TOP = .);
+		QUAD(__STACK_TOP)
+		PROVIDE(__ldconfig__KERNEL_TEXT_START_VMA = .);
+		QUAD(__KERNEL_TEXT_START_VMA);
+		PROVIDE(__ldconfig__KERNEL_TEXT_START_LMA = .);
+		QUAD(__KERNEL_TEXT_START_LMA);
+		PROVIDE(__ldconfig__KERNEL_TEXT_SIZE = .);
+		QUAD(__KERNEL_TEXT_SIZE);
+
+		PROVIDE(__ldconfig__KERNEL_BSS_START_VMA = .);
+		QUAD(__KERNEL_BSS_START_VMA);
+		PROVIDE(__ldconfig__KERNEL_BSS_START_LMA = .);
+		QUAD(__KERNEL_BSS_START_LMA);
+		PROVIDE(__ldconfig__KERNEL_BSS_SIZE = .);
+		QUAD(__KERNEL_BSS_SIZE);
+
+		PROVIDE(__ldconfig__KERNEL_RODATA_START_VMA = .);
+		QUAD(__KERNEL_RODATA_START_VMA);
+		PROVIDE(__ldconfig__KERNEL_RODATA_START_LMA = .);
+		QUAD(__KERNEL_RODATA_START_LMA);
+		PROVIDE(__ldconfig__KERNEL_RODATA_SIZE = .);
+		QUAD(__KERNEL_RODATA_SIZE);
+
+		PROVIDE(__ldconfig__KERNEL_DATA_START_VMA = .);
+		QUAD(__KERNEL_DATA_START_VMA);
+		PROVIDE(__ldconfig__KERNEL_DATA_START_LMA = .);
+		QUAD(__KERNEL_DATA_START_LMA);
+		PROVIDE(__ldconfig__KERNEL_DATA_SIZE = .);
+		QUAD(__KERNEL_DATA_SIZE);
 	}
 
-	.text : ALIGN(4K)
+	.data.i386 : ALIGN(4K)
+	{
+		*(.data.i386)
+	}
+
+	PROVIDE(__STACK_SIZE = DEFINED(__STACK_SIZE) ? __STACK_SIZE : 8K);
+
+	.stack BLOCK(__STACK_SIZE) (NOLOAD) : ALIGN(4K)
+	{
+		. += __STACK_SIZE;
+	}
+	PROVIDE(__STACK_TOP = .);
+
+	PROVIDE(__KERNEL_TEXT_START_LMA = .);
+
+	. = __VM_SPLIT;
+	. = ALIGN(4K);
+
+	. += __KERNEL_TEXT_START_LMA;
+	. = ALIGN(4K);
+	PROVIDE(__KERNEL_TEXT_START_VMA = .);
+
+	.text : AT(__KERNEL_TEXT_START_LMA)
 	{
 		*(.text)
 	}
 
-	.data : ALIGN(4K)
+	. = ALIGN(4K);
+	PROVIDE(__KERNEL_TEXT_SIZE = . - __KERNEL_TEXT_START_VMA);
+	PROVIDE(__KERNEL_BSS_START_VMA = .);
+	PROVIDE(__KERNEL_BSS_START_LMA = . - __VM_SPLIT);
+
+	.bss (NOLOAD) : AT(__KERNEL_DATA_START_LMA)
+	{
+		*(.bss)
+	}
+
+	. = ALIGN(4K);
+	PROVIDE(__KERNEL_BSS_SIZE = . - __KERNEL_BSS_START_VMA);
+	PROVIDE(__KERNEL_RODATA_START_VMA = .);
+	PROVIDE(__KERNEL_RODATA_START_LMA = . - __VM_SPLIT);
+
+	.rodata : AT(__KERNEL_RODATA_START_LMA)
+	{
+		*(.rodata)
+	}
+
+	. = ALIGN(4K);
+	PROVIDE(__KERNEL_RODATA_SIZE = . - __KERNEL_RODATA_START_VMA);
+	PROVIDE(__KERNEL_DATA_START_VMA = .);
+	PROVIDE(__KERNEL_DATA_START_LMA = . - __VM_SPLIT);
+
+	.data : AT(__KERNEL_DATA_START_LMA)
 	{
 		*(.data)
 	}
 
-	.bss (NOLOAD) : ALIGN(4K)
-	{
-		*(.bss)
-	}
+	. = ALIGN(4K);
+	PROVIDE(__KERNEL_DATA_SIZE = . - __KERNEL_DATA_START_VMA);
 
 	/DISCARD/ :
 	{

@@ -3,14 +3,12 @@ project(DavOS ASM C)
 
 
 # Determine the target architecture and its bitness
-if (CMAKE_SYSTEM_PROCESSOR MATCHES "(i386|x86|X86|ia32|IA32)")
-	set(CONFIG_ARCH i386)
-	set(CONFIG_ARCH_BITNESS 32)
-endif()
-
-if (CMAKE_SYSTEM_PROCESSOR MATCHES "(x86_64|X86_64|x64|X64|amd64|AMD64)")
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "(x86_64|X86_64|x64|X64|amd64|AMD64|ia32e|IA32e)")
 	set(CONFIG_ARCH x86_64)
 	set(CONFIG_ARCH_BITNESS 64)
+elseif (CMAKE_SYSTEM_PROCESSOR MATCHES "(i386|x86|X86|ia32|IA32)")
+	set(CONFIG_ARCH i386)
+	set(CONFIG_ARCH_BITNESS 32)
 endif()
 
 message(STATUS "Target architecture: ${CONFIG_ARCH} ${CONFIG_ARCH_BITNESS}bit")
@@ -24,6 +22,12 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-pic -ffreestanding -fno-exceptions 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 set(CONFIG_STACK_SIZE 0x2000 CACHE STRING "Stack size.")
+
+if (CONFIG_ARCH_BITNESS EQUAL 64)
+	set(CONFIG_VM_SPLIT 0x800000000000 CACHE STRING "Stack size.")
+else ()
+	set(CONFIG_VM_SPLIT 0xC0000000 CACHE STRING "Stack size.")
+endif ()
 
 
 # Include include/ and generated include/ directories.

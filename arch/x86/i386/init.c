@@ -1,9 +1,11 @@
 #include <stdbool.h>
 #include <stdint.h>
+#include <stddef.h>
 
 #include <config.h>
 
-#include <arch/vga_text.h>
+#include <x86/vga_text.h>
+#include <x86/paging/page_table_level_4.h>
 
 static bool check_cpuid_presence();
 static bool check_long_mode_presence();
@@ -82,4 +84,23 @@ static bool check_long_mode_presence()
 
 #define LONG_MODE_BIT 1 << 29
 	return !!(edx_value & LONG_MODE_BIT);
+}
+
+
+
+struct main_kernel_mem_layout {
+	void *text_start_lma, 	*text_end_lma;
+	void *bss_start_lma, 	*bss_end_lma;
+	void *rodata_start_lma, *rodata_end_lma;
+	void *data_start_lma, 	*data_end_lma;
+	unsigned long text_start_vma, 	text_end_vma;
+	unsigned long bss_start_vma, 	bss_end_vma;
+	unsigned long rodata_start_vma, rodata_end_vma;
+	unsigned long data_start_vma, 	data_end_vma;
+};
+
+
+static void map_main_kernel_pages(
+	struct main_kernel_mem_layout *mem_layout, void *mapping_location)
+{
 }
