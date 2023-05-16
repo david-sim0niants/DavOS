@@ -1,0 +1,3 @@
+function(decl_config NAME DEFAULT_VALUE DESCRIPTION)
+	set(${NAME} ${DEFAULT_VALUE} CACHE STRING ${DESCRIPTION})
+endfunction()

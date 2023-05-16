@@ -1,7 +1,8 @@
 #include <x86/vga_text.h>
+#include <string.h>
 
 
-long vga_text_writeb(struct vga_text *vga_text, char b)
+long vga_text_writeb(struct VGAText *vga_text, char b)
 {
 	long byte_offset = vga_text->curr_offset * 2;
 	VGA_TEXT_BUFFER_START[byte_offset] = b;
@@ -9,7 +10,7 @@ long vga_text_writeb(struct vga_text *vga_text, char b)
 	return ++vga_text->curr_offset;
 }
 
-long vga_text_write(struct vga_text *vga_text,
+long vga_text_write(struct VGAText *vga_text,
 			const char *buf_data, long buf_size)
 {
 	vga_text->curr_offset =
@@ -34,11 +35,10 @@ long vga_text_write_lc(const char *buf_data, long buf_size,
 
 void vga_text_clear()
 {
-	// TODO: define a memset function separately
-	__builtin_memset(VGA_TEXT_BUFFER_START, 0, VGA_TEXT_BUFFER_NBYTES);
+	memset(VGA_TEXT_BUFFER_START, 0, VGA_TEXT_BUFFER_NBYTES);
 }
 
-void vga_text_print(struct vga_text *vga_text, const char *str)
+void vga_text_print(struct VGAText *vga_text, const char *str)
 {
 	char c = 0;
 	while ((c = *(str++)) && vga_text->curr_offset < VGA_TEXT_BUFFER_SIZE) {

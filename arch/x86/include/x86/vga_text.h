@@ -1,5 +1,5 @@
-#ifndef _ARCH__VGA_TEXT_H__
-#define _ARCH__VGA_TEXT_H__
+#ifndef x86__VGA_TEXT_H__
+#define x86__VGA_TEXT_H__
 
 
 #define VGA_TEXT_BUFFER_START ((char *)0xB8000)
@@ -27,38 +27,38 @@
 
 #define VGA_TEXT_MAKE_COLOR(fg_color, bg_color) ((fg_color) | ((bg_color) << 4))
 
-struct vga_text {
+struct VGAText {
 	char curr_color;
 	long curr_offset;
 };
 
-static inline void vga_text_init(struct vga_text *vga_text)
+static inline void vga_text_init(struct VGAText *vga_text)
 {
 	vga_text->curr_color =
 		VGA_TEXT_MAKE_COLOR(VGA_TEXT_COLOR_WHITE, VGA_TEXT_COLOR_BLACK);
 	vga_text->curr_offset = 0;
 }
 
-static inline void vga_text_set_color(struct vga_text *vga_text, char color)
+static inline void vga_text_set_color(struct VGAText *vga_text, char color)
 {
 	vga_text->curr_color = color;
 }
 
-static inline void vga_text_set_offset(struct vga_text *vga_text, long offset)
+static inline void vga_text_set_offset(struct VGAText *vga_text, long offset)
 {
 	vga_text->curr_offset = offset;
 }
 
-long vga_text_writeb(struct vga_text *vga_text, char b);
+long vga_text_writeb(struct VGAText *vga_text, char b);
 
-long vga_text_write(struct vga_text *vga_text,
+long vga_text_write(struct VGAText *vga_text,
 			const char *buf_data, long buf_size);
 long vga_text_write_lc(const char *buf_data, long buf_size,
 			long offset, char color);
 
 void vga_text_clear();
 
-void vga_text_print(struct vga_text *vga_text, const char *str);
+void vga_text_print(struct VGAText *vga_text, const char *str);
 
 
 #endif

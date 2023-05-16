@@ -3,24 +3,46 @@
 #include <stddef.h>
 
 #include <config.h>
-
+#include <x86/config.h>
+#include <x86/cpuid.h>
 #include <x86/vga_text.h>
-#include <x86/paging/page_table_level_4.h>
 
-static bool check_cpuid_presence();
-static bool check_long_mode_presence();
+
+#if CONFIG_ARCH == ARCH_x86_64
+	#if (CONFIG_x86_PAGE_MAP_LEVEL & PAGE_MAP_LEVEL_4) || \
+		(CONFIG_x86_PAGE_MAP_LEVEL & PAGE_MAP_LEVEL_5)
+		#include <x86/paging/page_map_level_4_5.h>
+	#else
+		#error "At least one kind of paging map level should be specified for x86_64 architecture."
+	#endif
+#else
+	#if (CONFIG_x86_PAGE_MAP_LEVEL & PAGE_MAP_LEVEL_2) || \
+		(CONFIG_x86_PAGE_MAP_LEVEL & PAGE_MAP_LEVEL_3_PAE)
+		#if CONFIG_x86_PAGE_MAP_LEVEL & PAGE_MAP_LEVEL_2
+			#include <x86/paging/page_map_level_2.h>
+		#endif
+		#if CONFIG_x86_PAGE_MAP_LEVEL & PAGE_MAP_LEVEL_3_PAE
+			#include <x86/paging/page_map_level_3_PAE.h>
+		#endif
+	#else
+		#error "At least one kind of paging map level should be specified for i386 architecture."
+	#endif
+#endif
+
+
+static void print_vendor_info(
+	struct VGAText *vga_text, struct x86_ArchInfo *arch_info);
 
 
 int arch_init()
 {
 	vga_text_clear();
 
-	struct vga_text vga_text;
+	struct VGAText vga_text;
 	vga_text_init(&vga_text);
 
-#if CONFIG_ARCH == ARCH_x86_64
 	vga_text_print(&vga_text, "Checking CPUID.\r\n");
-	if (check_cpuid_presence()) {
+	if (x86_check_cpuid_presence()) {
 		vga_text_set_color(&vga_text, VGA_TEXT_COLOR_GREEN);
 		vga_text_print(&vga_text, "CPUID available.\r\n");
 	} else {
@@ -30,7 +52,13 @@ int arch_init()
 		return 1;
 	}
 
-	if (check_long_mode_presence()) {
+	struct x86_ArchInfo arch_info;
+	x86_cpuid(&arch_info);
+
+	print_vendor_info(&vga_text, &arch_info);
+
+#if CONFIG_ARCH == ARCH_x86_64
+	if (arch_info.ext_feature_flags & x86_EXT_FEATURE_LONG_MODE) {
 		vga_text_set_color(&vga_text, VGA_TEXT_COLOR_GREEN);
 		vga_text_print(&vga_text, "Long mode available.\r\n");
 	} else {
@@ -45,47 +73,17 @@ int arch_init()
 }
 
 
-static bool check_cpuid_presence()
+static void print_vendor_info(
+	struct VGAText *vga_text, struct x86_ArchInfo *arch_info)
 {
-	uint32_t curr_flags, prev_flags;
-	asm ( 	".equ ID_BIT, 1 << 21 	\n"
-		"pushf 			\n"
-		"pop %0 		\n"
-		"mov %0, %1 	 	\n"
-		"xor $ID_BIT, %0 	\n"
-		"push %0 		\n"
-		"popf 			\n"
-		"pushf  		\n"
-		"pop %0 		\n"
-		: "=r" (curr_flags), "=r" (prev_flags)
-	);
+	vga_text_set_color(vga_text, VGA_TEXT_COLOR_WHITE);
 
-	return curr_flags != prev_flags;
+	vga_text_print(vga_text, "Processor vendor: ");
+
+	const size_t vendor_id_len = sizeof(arch_info->vendor_id);
+	vga_text_write(vga_text, arch_info->vendor_id, vendor_id_len);
+	vga_text_print(vga_text, "\r\n");
 }
-
-
-static bool check_long_mode_presence()
-{
-	uint32_t eax_value;
-	asm ( 	"mov $0x80000000, %%eax \n"
-		"cpuid 			\n"
-		"mov %%eax, %0 		\n"
-		: "+r" (eax_value)
-	);
-	if (eax_value < 0x80000001)
-		return false;
-
-	uint32_t edx_value;
-	asm ( 	"mov $0x80000001, %%eax \n"
-		"cpuid 			\n"
-		"mov %%edx, %0 		\n"
-		: "+r" (edx_value)
-	);
-
-#define LONG_MODE_BIT 1 << 29
-	return !!(edx_value & LONG_MODE_BIT);
-}
-
 
 
 struct main_kernel_mem_layout {
@@ -101,6 +99,6 @@ struct main_kernel_mem_layout {
 
 
 static void map_main_kernel_pages(
-	struct main_kernel_mem_layout *mem_layout, void *mapping_location)
+	struct main_kernel_mem_layout *mem_layout, void *map_location)
 {
 }

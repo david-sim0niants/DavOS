@@ -2,6 +2,13 @@
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/generated/include)
 
+
+if (${CONFIG_ARCH} STREQUAL x86_64)
+	decl_config(CONFIG_x86_PAGE_MAP_LEVEL "PAGE_MAP_LEVEL_4" "Page map level")
+else ()
+	decl_config(CONFIG_x86_PAGE_MAP_LEVEL "PAGE_MAP_LEVEL_2 | PAGE_MAP_LEVEL_3_PAE" "Page map level")
+endif ()
+
 # Configure arch/config.h.in file.
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/x86/config.h.in
 	${CMAKE_CURRENT_BINARY_DIR}/generated/include/x86/config.h)
