@@ -21,6 +21,7 @@ set(KERNEL_ARCH_i386_IMAGE ${TARGET_OUTPUT_FILE})
 add_custom_command(
 	OUTPUT ${TARGET_OUTPUT_FILE}
 	COMMAND ${CMAKE_LINKER} $<TARGET_OBJECTS:kernel_arch_i386_objs> -T ${LINKER_SCRIPT} -melf_i386 --gc-sections -o ${TARGET_OUTPUT_FILE} --defsym __stack_size=${CONFIG_STACK_SIZE}
+	COMMAND ${CMAKE_OBJCOPY} --set-section-flags .ldconfig=alloc,readonly ${TARGET_OUTPUT_FILE} ${TARGET_OUTPUT_FILE}
 	DEPENDS kernel_arch_i386_objs $<TARGET_OBJECTS:kernel_arch_i386_objs> ${LINKER_SCRIPT}
 	COMMENT "Linking ${TARGET_OUTPUT_FILE_NAME}"
 	VERBATIM COMMAND_EXPAND_LISTS)
