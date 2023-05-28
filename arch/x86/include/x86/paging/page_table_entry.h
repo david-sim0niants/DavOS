@@ -30,7 +30,7 @@ using PageTableEntryValue =
 
 
 template<int pml>
-struct PageTableEntry {
+struct PageTableEntry_ {
 	static_assert(pml <= MAX_PAGE_MAP_LEVEL, "Page map level is too high.");
 	static_assert(pml > 0,
 		"Page table entry can't have a page map level lower than 1.");

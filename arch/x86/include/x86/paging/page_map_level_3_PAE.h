@@ -21,22 +21,22 @@ constexpr auto PTE_MAKE_PAGE_MASK(auto PAGE_SHIFT)
 constexpr auto PTE_PT_MASK = PTE_MAKE_PAGE_MASK(12);
 constexpr auto PTE_XD_BIT_LOC = 63;
 
-template<int pml> inline bool PageTableEntry<pml>::is_present()
+template<int pml> inline bool PageTableEntry_<pml>::is_present()
 {
 	return !!(value & (1 << PTE_P_BIT_LOC));
 }
 
-template<int pml> inline bool PageTableEntry<pml>::is_write_allowed()
+template<int pml> inline bool PageTableEntry_<pml>::is_write_allowed()
 {
 	return !!(value & (1 << PTE_RW_BIT_LOC)) || (pml == MAX_PAGE_MAP_LEVEL);
 }
 
-template<int pml> inline bool PageTableEntry<pml>::is_supervisor()
+template<int pml> inline bool PageTableEntry_<pml>::is_supervisor()
 {
 	return !!(value & (1 << PTE_US_BIT_LOC)) || (pml == MAX_PAGE_MAP_LEVEL);
 }
 
-template<int pml> inline bool PageTableEntry<pml>::maps_page()
+template<int pml> inline bool PageTableEntry_<pml>::maps_page()
 {
 	if constexpr (pml == MAX_PAGE_MAP_LEVEL)
 		return false;
@@ -46,7 +46,7 @@ template<int pml> inline bool PageTableEntry<pml>::maps_page()
 		return !(value & (1 << PTE_PS_BIT_LOC));
 }
 
-template<int pml> inline bool PageTableEntry<pml>::maps_page_table()
+template<int pml> inline bool PageTableEntry_<pml>::maps_page_table()
 {
 	if constexpr (pml == MAX_PAGE_MAP_LEVEL)
 		return true;
@@ -56,23 +56,23 @@ template<int pml> inline bool PageTableEntry<pml>::maps_page_table()
 		return !!(value & (1 << PTE_PS_BIT_LOC));
 }
 
-template<int pml> inline bool PageTableEntry<pml>::is_global()
+template<int pml> inline bool PageTableEntry_<pml>::is_global()
 {
 	return !!(value & (1 << PTE_G_BIT_LOC)) && (pml < MAX_PAGE_MAP_LEVEL);
 }
 
-template<int pml> inline bool PageTableEntry<pml>::is_execute_disabled()
+template<int pml> inline bool PageTableEntry_<pml>::is_execute_disabled()
 {
 	return !!(value & (uint64_t(1) << PTE_XD_BIT_LOC)) && (pml < 3);
 }
 
-template<int pml> inline void PageTableEntry<pml>::set_present(bool present)
+template<int pml> inline void PageTableEntry_<pml>::set_present(bool present)
 {
 	value &= uint64_t(present) << PTE_P_BIT_LOC;
 }
 
 template<int pml>
-inline void PageTableEntry<pml>::set_write_allowed(bool write_allowed)
+inline void PageTableEntry_<pml>::set_write_allowed(bool write_allowed)
 {
 	if constexpr (pml == 3)
 		return;
@@ -80,7 +80,7 @@ inline void PageTableEntry<pml>::set_write_allowed(bool write_allowed)
 }
 
 template<int pml>
-inline void PageTableEntry<pml>::set_user_or_supervisor(bool supervisor)
+inline void PageTableEntry_<pml>::set_user_or_supervisor(bool supervisor)
 {
 	if constexpr (pml == 3)
 		return;
@@ -88,7 +88,7 @@ inline void PageTableEntry<pml>::set_user_or_supervisor(bool supervisor)
 }
 
 template<int pml>
-inline void PageTableEntry<pml>::map_page(PhysAddr page_addr, bool global)
+inline void PageTableEntry_<pml>::map_page(PhysAddr page_addr, bool global)
 {
 	static_assert(pml == 3, "Can't map page at the page map level 3.");
 
@@ -100,7 +100,7 @@ inline void PageTableEntry<pml>::map_page(PhysAddr page_addr, bool global)
 }
 
 template<int pml>
-inline void PageTableEntry<pml>::map_page_table(PhysAddr pt_addr)
+inline void PageTableEntry_<pml>::map_page_table(PhysAddr pt_addr)
 {
 	static_assert(pml > 1, "Can't map page table at the page map level 1.");
 	pt_addr &= PTE_PT_MASK;
@@ -109,21 +109,21 @@ inline void PageTableEntry<pml>::map_page_table(PhysAddr pt_addr)
 }
 
 template<int pml>
-inline void PageTableEntry<pml>::set_execute_disabled(bool execute_disable)
+inline void PageTableEntry_<pml>::set_execute_disabled(bool execute_disable)
 {
 	if constexpr (pml == 3)
 		return;
 	value &= uint64_t(execute_disable) << PTE_XD_BIT_LOC;
 }
 
-template<int pml> inline PhysAddr PageTableEntry<pml>::get_page_table_addr()
+template<int pml> inline PhysAddr PageTableEntry_<pml>::get_page_table_addr()
 {
 	static_assert(pml > 1, "Can't get a page table map address from the "
 				"page map level 1 table entry.");
 	return value & PTE_PT_MASK;
 }
 
-template<int pml> inline PhysAddr PageTableEntry<pml>::get_page_addr()
+template<int pml> inline PhysAddr PageTableEntry_<pml>::get_page_addr()
 {
 	static_assert(pml == MAX_PAGE_MAP_LEVEL,
 		"Can't get a page map address from the page directory pointer "
@@ -132,13 +132,13 @@ template<int pml> inline PhysAddr PageTableEntry<pml>::get_page_addr()
 }
 
 template<>
-inline const unsigned PageTableEntry<3>::INDEX_BITS = PDP_ENTRY_INDEX_BITS;
+inline const unsigned PageTableEntry_<3>::INDEX_BITS = PDP_ENTRY_INDEX_BITS;
 template<int pml>
-inline const unsigned PageTableEntry<pml>::INDEX_BITS = PAGE_ENTRY_INDEX_BITS;
+inline const unsigned PageTableEntry_<pml>::INDEX_BITS = PAGE_ENTRY_INDEX_BITS;
 
-template<> inline const unsigned PageTableEntry<1>::CONTROLLED_BITS = 12;
-template<> inline const unsigned PageTableEntry<2>::CONTROLLED_BITS = 21;
-template<> inline const unsigned PageTableEntry<3>::CONTROLLED_BITS = 30;
+template<> inline const unsigned PageTableEntry_<1>::CONTROLLED_BITS = 12;
+template<> inline const unsigned PageTableEntry_<2>::CONTROLLED_BITS = 21;
+template<> inline const unsigned PageTableEntry_<3>::CONTROLLED_BITS = 30;
 
 
 struct LinearAddress_within_4KbPage {

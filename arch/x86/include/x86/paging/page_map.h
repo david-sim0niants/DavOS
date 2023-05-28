@@ -38,17 +38,36 @@ enum PageProtFlags {
 
 
 
+template<int pml> inline unsigned get_pte_idx(LineAddr linaddr)
+{
+	static_assert(pml >= 0 && pml <= MAX_PAGE_MAP_LEVEL,
+		"Invalid page map level.");
+
+	constexpr auto BEG_BIT_LOC = pml == 0 ?
+		0 : PageTableEntry_<pml>::CONTROLLED_BITS;
+	constexpr auto BEG_BIT = 1 << BEG_BIT_LOC;
+	constexpr auto END_BIT = pml == MAX_PAGE_MAP_LEVEL ?
+		0 : (1 << PageTableEntry_<pml + 1>::CONTROLLED_BITS);
+
+	return ((END_BIT - BEG_BIT) & linaddr) >> BEG_BIT_LOC;
+}
+
+
 template<int pml>
-class PageTable {
+class PageTable_ {
 public:
-	void map_page__no_mm(LineAddr line_pn, PhysAddr phys_pn, int pg_prot,
+	explicit PageTable_(PageTableEntry_<pml> *entries);
+
+	void map_page__no_mm(LineAddr linaddr, PhysAddr phyaddr, int pg_prot,
 		void *free_mem_beg, void *free_mem_end);
 
 private:
-	PageTableEntry<pml> *entries;
-	static constexpr auto NUM_ENTRIES= 1 << PageTableEntry<pml>::INDEX_BITS;
+	PageTableEntry_<pml> *entries;
+	static constexpr auto NUM_ENTRIES = 1<<PageTableEntry_<pml>::INDEX_BITS;
 };
 
+using PageTable = PageTable_<MAX_PAGE_MAP_LEVEL>;
+using PageTableEntry = PageTableEntry_<MAX_PAGE_MAP_LEVEL>;
 
 void map_pages__no_mm(void *linaddr, void *phyaddr, size_t size, int pg_prot,
 	void *pt_free_mem_ptr, size_t pt_free_mem_len);
