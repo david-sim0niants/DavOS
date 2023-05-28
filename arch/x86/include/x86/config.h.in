@@ -3,21 +3,30 @@
 
 #include <config.h>
 
-#define PAGE_MAP_LEVEL_2 1
-#define PAGE_MAP_LEVEL_3_PAE (PAGE_MAP_LEVEL_2 << 1)
-#define PAGE_MAP_LEVEL_4 (PAGE_MAP_LEVEL_3_PAE << 1)
-#define PAGE_MAP_LEVEL_5 (PAGE_MAP_LEVEL_4 << 1)
+#define x86_PAGE_MAP_LEVEL_2 1
+#define x86_PAGE_MAP_LEVEL_3_PAE (x86_PAGE_MAP_LEVEL_2 + 1)
+#define x86_PAGE_MAP_LEVEL_4 (x86_PAGE_MAP_LEVEL_3_PAE + 1)
+#define x86_PAGE_MAP_LEVEL_5 (x86_PAGE_MAP_LEVEL_4 + 1)
 
 #cmakedefine CONFIG_x86_PAGE_MAP_LEVEL @CONFIG_x86_PAGE_MAP_LEVEL@
 
 #if CONFIG_ARCH == ARCH_x86_64
-	#if CONFIG_PAGE_MAP_LEVEL & (PAGE_MAP_LEVEL_2 | PAGE_MAP_LEVEL_3_PAE)
+	#if CONFIG_PAGE_MAP_LEVEL == x86_PAGE_MAP_LEVEL_2 \
+	 || CONFIG_PAGE_MAP_LEVEL == x86_PAGE_MAP_LEVEL_3_PAE
 		#error "Can't use level 2 or PAE paging in 64bit kernel."
 	#endif
 #else
-	#if CONFIG_PAGE_MAP_LEVEL & (PAGE_MAP_LEVEL_4 | PAGE_MAP_LEVEL_5)
+	#if CONFIG_PAGE_MAP_LEVEL == x86_PAGE_MAP_LEVEL_4 \
+	 || CONFIG_PAGE_MAP_LEVEL == x86_PAGE_MAP_LEVEL_5
 		#error "Can't use level 4 or level 5 paging in 32bit kernel."
 	#endif
+#endif
+
+
+#cmakedefine CONFIG_x86_PHYS_ADDR_64BIT @CONFIG_x86_PHYS_ADDR_64BIT@
+
+#if !CONFIG_x86_PHYS_ADDR_64BIT && CONFIG_ARCH == ARCH_x86_64
+	#error "Can't use 32bit physical address type for x86_64 architecture."
 #endif
 
 #endif

@@ -2,24 +2,135 @@
 #define x86_PAGING__PAGE_MAP_LEVEL_4_5_H__
 
 #include <stdint.h>
+#include <x86/paging/page_table_entry.h>
 
-#define PAGE_ENTRY_INDEX_BITS 9
-#define NR_PAGE_ENTRIES (1 << PAGE_ENTRY_INDEX_BITS)
+namespace x86 {
 
-typedef uint64_t PEntry_t;
-typedef PEntry_t PTable_t[NR_PAGE_ENTRIES];
+constexpr int PAGE_ENTRY_INDEX_BITS = 9;
 
-typedef uint64_t PDEntry_t;
-typedef PDEntry_t PDTable_t[NR_PAGE_ENTRIES];
+constexpr auto PTE_P_BIT_LOC = 0;
+constexpr auto PTE_RW_BIT_LOC = 1;
+constexpr auto PTE_US_BIT_LOC = 2;
+constexpr auto PTE_PS_BIT_LOC = 7;
+constexpr auto PTE_G_BIT_LOC = 8;
+constexpr auto PTE_MAKE_PAGE_MASK(auto PAGE_SHIFT)
+{
+	return ((PhysAddr(1) << 52) - (1 << PAGE_SHIFT));
+}
+constexpr auto PTE_PT_MASK = PTE_MAKE_PAGE_MASK(12);
+constexpr auto PTE_XD_BIT_LOC = 63;
 
-typedef uint64_t PDPEntry_t;
-typedef PDPEntry_t PDPTable_t[NR_PAGE_ENTRIES];
+template<int pml> inline bool PageTableEntry<pml>::is_present()
+{
+	return !!(value & (1 << PTE_P_BIT_LOC));
+}
 
-typedef uint64_t PML4Entry_t;
-typedef PML4Entry_t PML4Table_t[NR_PAGE_ENTRIES];
+template<int pml> inline bool PageTableEntry<pml>::is_write_allowed()
+{
+	return !!(value & (1 << PTE_RW_BIT_LOC));
+}
 
-typedef uint64_t PML5Entry_t;
-typedef PML5Entry_t PML5Table_t[NR_PAGE_ENTRIES];
+template<int pml> inline bool PageTableEntry<pml>::is_supervisor()
+{
+	return !!(value & (1 << PTE_US_BIT_LOC));
+}
+
+template<int pml> inline bool PageTableEntry<pml>::maps_page()
+{
+	if constexpr (pml > 3)
+		return false;
+	else if constexpr (pml == 1)
+		return true;
+	else
+		return !(value & (1 << PTE_PS_BIT_LOC));
+}
+
+template<int pml> inline bool PageTableEntry<pml>::maps_page_table()
+{
+	if constexpr (pml > 3)
+		return true;
+	else if constexpr (pml == 1)
+		return false;
+	else
+		return !!(value & (1 << PTE_PS_BIT_LOC));
+}
+
+template<int pml> inline bool PageTableEntry<pml>::is_global()
+{
+	return !!(value & (1 << PTE_G_BIT_LOC)) && (pml < 4);
+}
+
+template<int pml> inline bool PageTableEntry<pml>::is_execute_disabled()
+{
+	return !!(value & (uint64_t(1) << PTE_XD_BIT_LOC));
+}
+
+template<int pml> inline void PageTableEntry<pml>::set_present(bool present)
+{
+	value |= uint64_t(present) << PTE_P_BIT_LOC;
+}
+
+template<int pml>
+inline void PageTableEntry<pml>::set_write_allowed(bool write_allowed)
+{
+	value |= uint64_t(write_allowed) << PTE_RW_BIT_LOC;
+}
+
+template<int pml>
+inline void PageTableEntry<pml>::set_user_or_supervisor(bool supervisor)
+{
+	value |= uint64_t(supervisor) << PTE_US_BIT_LOC;
+}
+
+template<int pml>
+inline void PageTableEntry<pml>::map_page(PhysAddr page_addr, bool global)
+{
+	static_assert(pml <= 3, "Can't map page at the page map level above 3.");
+
+	static constexpr auto PAGE_MASK = PTE_MAKE_PAGE_MASK(CONTROLLED_BITS);
+	page_addr &= PAGE_MASK;
+	value &= ~PAGE_MASK;
+	value |= page_addr;
+	value |= int(global) << PTE_G_BIT_LOC;
+}
+
+template<int pml>
+inline void PageTableEntry<pml>::map_page_table(PhysAddr pt_addr)
+{
+	static_assert(pml > 1, "Can't map page table at the page map level 1.");
+	pt_addr &= PTE_PT_MASK;
+	value &= ~PTE_PT_MASK;
+	value |= pt_addr;
+}
+
+template<int pml>
+inline void PageTableEntry<pml>::set_execute_disabled(bool execute_disable)
+{
+	value &= uint64_t(execute_disable) << PTE_XD_BIT_LOC;
+}
+
+template<int pml> inline PhysAddr PageTableEntry<pml>::get_page_addr()
+{
+	static_assert(pml <= 3,
+		"Can't get a page map address at the page map level above 3.");
+	return value & PTE_MAKE_PAGE_MASK(CONTROLLED_BITS);
+}
+
+template<int pml> inline PhysAddr PageTableEntry<pml>::get_page_table_addr()
+{
+	static_assert(pml > 1,
+		"Can't get a page table address from the level 1 entry.");
+	return value & PTE_PT_MASK;
+}
+
+template<int pml>
+const unsigned PageTableEntry<pml>::INDEX_BITS = PAGE_ENTRY_INDEX_BITS;
+
+template<>
+inline const unsigned PageTableEntry<1>::CONTROLLED_BITS = 12;
+template<int pml>
+inline const unsigned PageTableEntry<pml>::CONTROLLED_BITS =
+	PageTableEntry<pml - 1>::CONTROLLED_BITS + INDEX_BITS;
 
 
 struct LinearAddress_within_4KbPage {
@@ -45,5 +156,7 @@ struct LinearAddress_within_1GbPage {
 	uint64_t page_map_level_4 : PAGE_ENTRY_INDEX_BITS;
 	uint64_t page_map_level_5 : PAGE_ENTRY_INDEX_BITS;
 };
+
+}
 
 #endif

@@ -1,5 +1,14 @@
 cmake_minimum_required(VERSION 3.12)
-project(DavOS ASM C)
+project(DavOS ASM C CXX)
+
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD 20)
+
+# Set compiler flags
+set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -x assembler-with-cpp")
+set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fno-pic -fno-ident -ffreestanding -fno-exceptions -nostdlib -nostdinc -fno-stack-protector")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-pic -fno-ident -ffreestanding -fno-exceptions -fno-rtti -nostdlib -nostdinc -fno-stack-protector")
+
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
@@ -18,13 +27,7 @@ endif()
 
 message(STATUS "Target architecture: ${CONFIG_ARCH} ${CONFIG_ARCH_BITNESS}bit")
 
-
-# Set compiler flags
-set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -x assembler-with-cpp --no-pic --freestanding --no-standard-libraries --no-standard-includes --no-stack-protector")
-set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fno-pic -fno-ident -ffreestanding -fno-exceptions -nostdlib -nostdinc -fno-stack-protector")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-pic -ffreestanding -fno-exceptions -fno-rtti -nostdlib -nostdinc")
-
-set(CONFIG_STACK_SIZE 0x2000 CACHE STRING "Stack size.")
+decl_config(CONFIG_STACK_SIZE 0x2000 "Stack size.")
 
 if (CONFIG_ARCH_BITNESS EQUAL 64)
 	decl_config(CONFIG_VM_SPLIT 0x800000000000 "Stack size.")

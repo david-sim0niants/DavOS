@@ -1,0 +1,36 @@
+#ifndef __LDCONFIG_H__
+#define __LDCONFIG_H__
+
+#include <stddef.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define DECLARE_LDCONFIG(type, name) \
+extern type __ldconfig__##name __attribute__((section(".ldconfig")))
+
+/* Link defined config declarations go here. */
+
+DECLARE_LDCONFIG(size_t, STACK_TOP);
+DECLARE_LDCONFIG(void *, KERNEL_IMAGE_END_VMA);
+DECLARE_LDCONFIG(void *, KERNEL_IMAGE_END_LMA);
+DECLARE_LDCONFIG(void *, KERNEL_TEXT_START_VMA);
+DECLARE_LDCONFIG(void *, KERNEL_TEXT_START_LMA);
+DECLARE_LDCONFIG(size_t, KERNEL_TEXT_SIZE);
+DECLARE_LDCONFIG(void *, KERNEL_BSS_START_VMA);
+DECLARE_LDCONFIG(void *, KERNEL_BSS_START_LMA);
+DECLARE_LDCONFIG(size_t, KERNEL_BSS_SIZE);
+DECLARE_LDCONFIG(void *, KERNEL_RODATA_START_VMA);
+DECLARE_LDCONFIG(void *, KERNEL_RODATA_START_LMA);
+DECLARE_LDCONFIG(size_t, KERNEL_RODATA_SIZE);
+DECLARE_LDCONFIG(void *, KERNEL_DATA_START_VMA);
+DECLARE_LDCONFIG(void *, KERNEL_DATA_START_LMA);
+DECLARE_LDCONFIG(size_t, KERNEL_DATA_SIZE);
+
+#ifdef __cplusplus
+}
+#endif
+
+
+#endif

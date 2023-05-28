@@ -2,7 +2,7 @@
 set(TARGET_NAME kernel_arch_i386_objs)
 set(LINKER_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/linker_i386.ld)
 
-add_library(${TARGET_NAME} OBJECT entry.S init.c ../vga_text.c ../cpuid.c)
+add_library(${TARGET_NAME} OBJECT entry.S init.cc ../vga_text.cc ../cpuid.cc)
 if (${CONFIG_ARCH} STREQUAL x86_64)
 	target_compile_options(${TARGET_NAME} PRIVATE -m32)
 endif ()

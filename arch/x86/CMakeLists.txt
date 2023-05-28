@@ -3,10 +3,22 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/generated/include)
 
 
+# Declare x86_PAGE_MAP_LEVEL and PAGE_SIZE configs
 if (${CONFIG_ARCH} STREQUAL x86_64)
 	decl_config(CONFIG_x86_PAGE_MAP_LEVEL "PAGE_MAP_LEVEL_4" "Page map level")
+	decl_config(CONFIG_PAGE_SIZE 0x1000 "Page size")
 else ()
 	decl_config(CONFIG_x86_PAGE_MAP_LEVEL "PAGE_MAP_LEVEL_2 | PAGE_MAP_LEVEL_3_PAE" "Page map level")
+	decl_config(CONFIG_PAGE_SIZE 0x1000 "Page size")
+endif ()
+set(CONFIG_x86_PAGE_MAP_LEVEL "x86_${CONFIG_x86_PAGE_MAP_LEVEL}")
+
+option(CONFIG_x86_PHYS_ADDR_64BIT "Is physical address size large enough (above 32 bits) to require a 64bit integer to hold its value." ON)
+
+if (CONFIG_x86_PHYS_ADDR_64BIT)
+	set(CONFIG_x86_PHYS_ADDR_64BIT 1)
+else ()
+	set(CONFIG_x86_PHYS_ADDR_64BIT 0)
 endif ()
 
 # Configure arch/config.h.in file.
@@ -20,7 +32,7 @@ add_subdirectory(i386)
 # Build x86 architecture specific library.
 set(TARGET_NAME kernel_arch_x86)
 
-add_library(${TARGET_NAME} STATIC null.c)
+add_library(${TARGET_NAME} STATIC null.cc)
 set_target_properties(${TARGET_NAME} PROPERTIES PREFIX "" SUFFIX ".elf")
 
 
