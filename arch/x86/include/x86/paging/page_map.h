@@ -30,12 +30,13 @@
 
 namespace x86 {
 
-enum PageProtFlags {
-	PAGE_PROT_READ = 0x0, 
-	PAGE_PROT_WRITE = 0x1,
-	PAGE_PROT_EXEC = 0x2,
+enum PageEntryFlags {
+	PAGE_ENTRY_NONE = 0x0,
+	PAGE_ENTRY_WRITE_ALLOWED = 0x1,
+	PAGE_ENTRY_SUPERVISOR = PAGE_ENTRY_WRITE_ALLOWED << 1,
+	PAGE_ENTRY_GLOBAL = PAGE_ENTRY_SUPERVISOR << 1,
+	PAGE_ENTRY_EXECUTE_DISABLED = PAGE_ENTRY_GLOBAL << 1,
 };
-
 
 
 template<int pml> inline unsigned get_pte_idx(LineAddr linaddr)
@@ -43,23 +44,43 @@ template<int pml> inline unsigned get_pte_idx(LineAddr linaddr)
 	static_assert(pml >= 0 && pml <= MAX_PAGE_MAP_LEVEL,
 		"Invalid page map level.");
 
-	constexpr auto BEG_BIT_LOC = pml == 0 ?
-		0 : PageTableEntry_<pml>::CONTROLLED_BITS;
-	constexpr auto BEG_BIT = 1 << BEG_BIT_LOC;
-	constexpr auto END_BIT = pml == MAX_PAGE_MAP_LEVEL ?
-		0 : (1 << PageTableEntry_<pml + 1>::CONTROLLED_BITS);
+	constexpr auto BEG_BIT_LOC = []() constexpr
+	{
+		if constexpr (pml == 0)
+			return 0;
+		else
+			return PageTableEntry_<pml>::CONTROLLED_BITS;
+	}();
+	constexpr auto BEG_BIT = LineAddr(1) << BEG_BIT_LOC;
+
+	constexpr auto END_BIT = []() constexpr -> LineAddr
+	{
+		if constexpr (pml == MAX_PAGE_MAP_LEVEL)
+			return 0;
+		else
+			return LineAddr(1)
+				<< PageTableEntry_<pml + 1>::CONTROLLED_BITS;
+	}();
 
 	return ((END_BIT - BEG_BIT) & linaddr) >> BEG_BIT_LOC;
 }
 
-
 template<int pml>
 class PageTable_ {
 public:
+	enum class Err {
+		NONE = 0, EXISTING_PAGE_MAP
+	};
+
 	explicit PageTable_(PageTableEntry_<pml> *entries);
 
-	void map_page__no_mm(LineAddr linaddr, PhysAddr phyaddr, int pg_prot,
-		void *free_mem_beg, void *free_mem_end);
+	template<PageSize page_size>
+	Err map_page__no_mm(LineAddr linaddr, PhysAddr phyaddr, int flags,
+		char *&free_mem_beg, char *free_mem_end);
+
+	Err map_page_range__no_mm(LineAddr linaddr, PhysAddr phyaddr,
+		size_t range_size, int flags,
+		char *free_mem_beg, char *free_mem_end);
 
 private:
 	PageTableEntry_<pml> *entries;
@@ -68,9 +89,6 @@ private:
 
 using PageTable = PageTable_<MAX_PAGE_MAP_LEVEL>;
 using PageTableEntry = PageTableEntry_<MAX_PAGE_MAP_LEVEL>;
-
-void map_pages__no_mm(void *linaddr, void *phyaddr, size_t size, int pg_prot,
-	void *pt_free_mem_ptr, size_t pt_free_mem_len);
 
 }
 

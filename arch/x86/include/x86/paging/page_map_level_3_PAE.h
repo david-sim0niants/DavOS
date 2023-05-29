@@ -97,6 +97,7 @@ inline void PageTableEntry_<pml>::map_page(PhysAddr page_addr, bool global)
 	value &= ~PAGE_MASK;
 	value |= page_addr;
 	value |= int(global) << PTE_G_BIT_LOC;
+	value |= 1 << PTE_PS_BIT_LOC;
 }
 
 template<int pml>
@@ -106,6 +107,7 @@ inline void PageTableEntry_<pml>::map_page_table(PhysAddr pt_addr)
 	pt_addr &= PTE_PT_MASK;
 	value &= ~PTE_PT_MASK;
 	value |= pt_addr;
+	value &= ~(1 << PTE_PS_BIT_LOC);
 }
 
 template<int pml>
@@ -140,18 +142,8 @@ template<> inline const unsigned PageTableEntry_<1>::CONTROLLED_BITS = 12;
 template<> inline const unsigned PageTableEntry_<2>::CONTROLLED_BITS = 21;
 template<> inline const unsigned PageTableEntry_<3>::CONTROLLED_BITS = 30;
 
-
-struct LinearAddress_within_4KbPage {
-	uint32_t offset : 12;
-	uint32_t page : PAGE_ENTRY_INDEX_BITS;
-	uint32_t page_directory : PAGE_ENTRY_INDEX_BITS;
-	uint32_t page_directory_pointer : PDP_ENTRY_INDEX_BITS;
-};
-
-struct LinearAddress_within_2MbPage {
-	uint32_t offset : 21;
-	uint32_t page_directory : PAGE_ENTRY_INDEX_BITS;
-	uint32_t page_directory_pointer : PDP_ENTRY_INDEX_BITS;
+enum class PageSize {
+	PS_4Kb, PS_2Mb
 };
 
 }
