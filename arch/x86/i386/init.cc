@@ -134,27 +134,13 @@ static void print_vendor_info(VGAText &vga_text, ArchInfo &arch_info)
 static void map_main_kernel_pages(const MainKernelMemLayout &mem_layout,
 	uintptr_t map_location)
 {
-	PageTable page_table {reinterpret_cast<PageTableEntry *>(map_location)};
+	PageTable *page_table = reinterpret_cast<PageTable *>(map_location);
 	map_location += PageTable::SIZE;
-	page_table.map_page__no_mm((PhysAddr)mem_layout.text.start_lma,
+
+	page_table->map_page__no_mm((PhysAddr)mem_layout.text.start_lma,
 		(LineAddr)mem_layout.text.start_vma, PageSize::PS_4Kb,
 		PAGE_ENTRY_GLOBAL | PAGE_ENTRY_SUPERVISOR,
 		map_location, map_location + 0x10000000);
-	// map_pages__no_mm(
-	// 	mem_layout.text.start_lma, mem_layout.text.start_vma,
-	// 	mem_layout.text.size, PAGE_PROT_READ | PAGE_PROT_EXEC);
-	//
-	// map_pages__no_mm(
-	// 	mem_layout.bss.start_lma, mem_layout.bss.start_vma,
-	// 	mem_layout.bss.size, PAGE_PROT_READ | PAGE_PROT_WRITE);
-	//
-	// map_pages__no_mm(
-	// 	mem_layout.rodata.start_lma, mem_layout.rodata.start_vma,
-	// 	mem_layout.rodata.size, PAGE_PROT_READ | PAGE_PROT_WRITE);
-	//
-	// map_pages__no_mm(
-	// 	mem_layout.data.start_lma, mem_layout.data.start_vma,
-	// 	mem_layout.data.size, PAGE_PROT_READ | PAGE_PROT_WRITE);
 }
 
 } // x86

@@ -6,11 +6,6 @@
 
 namespace x86 {
 
-template<int pml> PageTable_<pml>::PageTable_(PageTableEntry_<pml> *entries)
-	: entries(entries)
-{
-}
-
 enum class LocalErr {
 	NONE = 0,
 	OVERFLOW,
@@ -44,7 +39,6 @@ Err PageTable_<pml>::map_page__no_mm(LineAddr linaddr, PhysAddr phyaddr,
 #if CONFIG_x86_PAGE_MAP_LEVEL == x86_PAGE_MAP_LEVEL_2
 	case PageSize::PS_4Mb:
 		return map_page__static.template operator()<PageSize::PS_4Mb>();
-		break;
 #endif
 #if CONFIG_x86_PAGE_MAP_LEVEL >= x86_PAGE_MAP_LEVEL_4
 	case PageSize::PS_1Gb:
@@ -83,6 +77,7 @@ Err PageTable_<pml>::map_page__no_mm_internal(
 		static_assert(pml > 1, "Can't have pml == 1 here.");
 		if (entry.maps_page())
 			return Err::EXISTING_PAGE_MAP;
+
 		PhysAddr next_pt_addr;
 		if (entry.maps_page_table()) {
 			next_pt_addr = entry.get_page_table_addr();
@@ -94,15 +89,15 @@ Err PageTable_<pml>::map_page__no_mm_internal(
 			if (p_err && *p_err == LocalErr::NO_FREE_MEM)
 				return Err::NO_FREE_MEM;
 
-			auto new_pt_ptr = kstd::get<PhysAddr>(maybe_pt_ptr);
-			entry.map_page_table((PhysAddr)new_pt_ptr);
-
-			PageTable_<pml - 1> pt {
-				(PageTableEntry_<pml - 1> *)new_pt_ptr
-			};
-			pt.template map_page__no_mm_internal<page_size>(linaddr,
-				phyaddr, flags, free_mem_beg, free_mem_end);
+			next_pt_addr = kstd::get<PhysAddr>(maybe_pt_ptr);
+			entry.map_page_table((PhysAddr)next_pt_addr);
 		}
+
+		auto next_pt_ptr = reinterpret_cast<
+			PageTable_<pml - 1> *>(next_pt_addr);
+		next_pt_ptr->template map_page__no_mm_internal<page_size>(
+			linaddr, phyaddr, flags,
+			free_mem_beg, free_mem_end);
 	}
 
 	entry.set_write_allowed(flags & PAGE_ENTRY_WRITE_ALLOWED);

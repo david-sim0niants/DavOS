@@ -74,8 +74,6 @@ public:
 		NONE = 0, EXISTING_PAGE_MAP, NO_FREE_MEM
 	};
 
-	explicit PageTable_(PageTableEntry_<pml> *entries);
-
 	Err map_page__no_mm(LineAddr linaddr, PhysAddr phyaddr, PageSize ps,
 		int flags, uintptr_t &free_mem_beg, uintptr_t free_mem_end);
 
@@ -91,7 +89,7 @@ private:
 	Err map_page__no_mm_internal(LineAddr linaddr, PhysAddr phyaddr,
 		int flags, uintptr_t &free_mem_beg, uintptr_t free_mem_end);
 
-	PageTableEntry_<pml> *entries;
+	PageTableEntry_<pml> entries[NUM_ENTRIES] = {};
 };
 
 using PageTable = PageTable_<MAX_PAGE_MAP_LEVEL>;
