@@ -26,7 +26,7 @@ struct MainKernelMemLayout {
 };
 
 static void map_main_kernel_pages(const MainKernelMemLayout &mem_layout,
-	void *map_location);
+	uintptr_t map_location);
 
 
 constexpr char RED_ON_BLACK =
@@ -92,7 +92,7 @@ extern "C" int arch_init()
 	if ((map_location & ((1 << PAGE_TABLE_SIZE_BITS) - 1)) != 0)
 		map_location = ((map_location >> 12) + 1) << 12;
 
-	map_main_kernel_pages(mem_layout, (void *)map_location);
+	map_main_kernel_pages(mem_layout, map_location);
 
 	return 0;
 }
@@ -132,9 +132,14 @@ static void print_vendor_info(VGAText &vga_text, ArchInfo &arch_info)
 
 
 static void map_main_kernel_pages(const MainKernelMemLayout &mem_layout,
-	void *map_location)
+	uintptr_t map_location)
 {
-	PageTable page_table {static_cast<PageTableEntry *>(map_location)};
+	PageTable page_table {reinterpret_cast<PageTableEntry *>(map_location)};
+	map_location += PageTable::SIZE;
+	page_table.map_page__no_mm((PhysAddr)mem_layout.text.start_lma,
+		(LineAddr)mem_layout.text.start_vma, PageSize::PS_4Kb,
+		PAGE_ENTRY_GLOBAL | PAGE_ENTRY_SUPERVISOR,
+		map_location, map_location + 0x10000000);
 	// map_pages__no_mm(
 	// 	mem_layout.text.start_lma, mem_layout.text.start_vma,
 	// 	mem_layout.text.size, PAGE_PROT_READ | PAGE_PROT_EXEC);

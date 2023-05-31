@@ -92,7 +92,6 @@ inline void PageTableEntry_<pml>::map_page(PhysAddr page_addr, bool global)
 	value &= ~PAGE_MASK;
 	value |= page_addr;
 	value |= int(global) << PTE_G_BIT_LOC;
-	value |= 1 << PTE_PS_BIT_LOC;
 }
 
 template<int pml>
@@ -134,7 +133,7 @@ template<int pml>
 inline const unsigned PageTableEntry_<pml>::CONTROLLED_BITS =
 	PageTableEntry_<pml - 1>::CONTROLLED_BITS + INDEX_BITS;
 
-enum class PageSize {
+enum class PageSize : uint64_t {
 	PS_4Kb = 1 << 12, PS_2Mb = 1 << 21, PS_1Gb = 1 << 30
 };
 

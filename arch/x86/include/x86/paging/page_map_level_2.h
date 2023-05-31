@@ -128,7 +128,7 @@ const unsigned PageTableEntry_<pml>::INDEX_BITS = PAGE_ENTRY_INDEX_BITS;
 template<> inline const unsigned PageTableEntry_<1>::CONTROLLED_BITS = 12;
 template<> inline const unsigned PageTableEntry_<2>::CONTROLLED_BITS = 22;
 
-enum class PageSize {
+enum class PageSize : uint32_t {
 	PS_4Kb, PS_4Mb
 };
 

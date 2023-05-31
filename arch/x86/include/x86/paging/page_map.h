@@ -68,23 +68,30 @@ template<int pml> inline unsigned get_pte_idx(LineAddr linaddr)
 template<int pml>
 class PageTable_ {
 public:
+	friend class PageTable_<pml + 1>;
+
 	enum class Err {
-		NONE = 0, EXISTING_PAGE_MAP
+		NONE = 0, EXISTING_PAGE_MAP, NO_FREE_MEM
 	};
 
 	explicit PageTable_(PageTableEntry_<pml> *entries);
 
-	template<PageSize page_size>
-	Err map_page__no_mm(LineAddr linaddr, PhysAddr phyaddr, int flags,
-		char *&free_mem_beg, char *free_mem_end);
+	Err map_page__no_mm(LineAddr linaddr, PhysAddr phyaddr, PageSize ps,
+		int flags, uintptr_t &free_mem_beg, uintptr_t free_mem_end);
 
 	Err map_page_range__no_mm(LineAddr linaddr, PhysAddr phyaddr,
 		size_t range_size, int flags,
-		char *free_mem_beg, char *free_mem_end);
+		uintptr_t free_mem_beg, uintptr_t free_mem_end);
+
+	static constexpr auto NUM_ENTRIES = 1<<PageTableEntry_<pml>::INDEX_BITS;
+	static constexpr auto SIZE = NUM_ENTRIES * sizeof(PageTableEntry_<pml>);
 
 private:
+	template<PageSize page_size>
+	Err map_page__no_mm_internal(LineAddr linaddr, PhysAddr phyaddr,
+		int flags, uintptr_t &free_mem_beg, uintptr_t free_mem_end);
+
 	PageTableEntry_<pml> *entries;
-	static constexpr auto NUM_ENTRIES = 1<<PageTableEntry_<pml>::INDEX_BITS;
 };
 
 using PageTable = PageTable_<MAX_PAGE_MAP_LEVEL>;

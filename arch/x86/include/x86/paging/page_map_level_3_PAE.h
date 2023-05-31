@@ -142,7 +142,7 @@ template<> inline const unsigned PageTableEntry_<1>::CONTROLLED_BITS = 12;
 template<> inline const unsigned PageTableEntry_<2>::CONTROLLED_BITS = 21;
 template<> inline const unsigned PageTableEntry_<3>::CONTROLLED_BITS = 30;
 
-enum class PageSize {
+enum class PageSize : uint32_t {
 	PS_4Kb, PS_2Mb
 };
 
