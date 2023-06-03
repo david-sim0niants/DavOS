@@ -14,19 +14,23 @@
 
 namespace x86 {
 
+enum LocalErr {
+	NONE = 0, KERNEL_MAP_FAIL,
+};
+
 static void print_vendor_info(VGAText &vga_text, ArchInfo &arch_info);
 static bool try_x86_cpuid_verbose(ArchInfo &arch_info, VGAText &vga_text);
 
-struct MainKernelSection {
+struct KernelSection {
 	void *start_vma, *start_lma; size_t size;
 };
 
-struct MainKernelMemLayout {
-	MainKernelSection text, bss, rodata, data;
+struct KernelMemLayout {
+	KernelSection text, bss, rodata, data;
 };
 
-static void map_main_kernel_pages(const MainKernelMemLayout &mem_layout,
-	uintptr_t map_location);
+static LocalErr map_main_kernel_pages(const KernelMemLayout &mem_layout,
+		uintptr_t map_location);
 
 
 constexpr char RED_ON_BLACK =
@@ -63,7 +67,7 @@ extern "C" int arch_init()
 	}
 
 
-	MainKernelMemLayout mem_layout = {
+	KernelMemLayout mem_layout = {
 		.text = {
 			.start_vma = __ldconfig__KERNEL_TEXT_START_VMA,
 			.start_lma = __ldconfig__KERNEL_TEXT_START_LMA,
@@ -92,16 +96,18 @@ extern "C" int arch_init()
 	if ((map_location & ((1 << PAGE_TABLE_SIZE_BITS) - 1)) != 0)
 		map_location = ((map_location >> 12) + 1) << 12;
 
-	map_main_kernel_pages(mem_layout, map_location);
+	auto e = map_main_kernel_pages(mem_layout, map_location);
+	if (e != LocalErr::NONE)
+		return -1;
 
 	return 0;
 }
 #else
-	int arch_init()
-	{
-		// unimplemented
-		return -2;
-	}
+int arch_init()
+{
+	// unimplemented
+	return -2;
+}
 #endif
 
 static bool try_x86_cpuid_verbose(ArchInfo &arch_info, VGAText &vga_text)
@@ -131,16 +137,51 @@ static void print_vendor_info(VGAText &vga_text, ArchInfo &arch_info)
 }
 
 
-static void map_main_kernel_pages(const MainKernelMemLayout &mem_layout,
+static LocalErr map_main_kernel_pages(const KernelMemLayout &mem_layout,
 	uintptr_t map_location)
 {
 	PageTable *page_table = reinterpret_cast<PageTable *>(map_location);
 	map_location += PageTable::SIZE;
 
-	page_table->map_page__no_mm((PhysAddr)mem_layout.text.start_lma,
-		(LineAddr)mem_layout.text.start_vma, PageSize::PS_4Kb,
-		PAGE_ENTRY_GLOBAL | PAGE_ENTRY_SUPERVISOR,
-		map_location, map_location + 0x10000000);
+	PageTable::Err e;
+
+	e = page_table->map_memory__no_mm(
+			(PhysAddr)mem_layout.text.start_lma,
+			(LineAddr)mem_layout.text.start_vma,
+			mem_layout.text.size,
+			PAGE_ENTRY_GLOBAL | PAGE_ENTRY_SUPERVISOR,
+			map_location, map_location + 0x40000000);
+	if (e != PageTable::Err::NONE)
+		return LocalErr::KERNEL_MAP_FAIL;
+
+	e = page_table->map_memory__no_mm(
+			(PhysAddr)mem_layout.bss.start_lma,
+			(LineAddr)mem_layout.bss.start_vma,
+			mem_layout.bss.size,
+			PAGE_ENTRY_GLOBAL | PAGE_ENTRY_SUPERVISOR,
+			map_location, map_location + 0x40000000);
+	if (e != PageTable::Err::NONE)
+		return LocalErr::KERNEL_MAP_FAIL;
+
+	e = page_table->map_memory__no_mm(
+			(PhysAddr)mem_layout.rodata.start_lma,
+			(LineAddr)mem_layout.rodata.start_vma,
+			mem_layout.rodata.size,
+			PAGE_ENTRY_GLOBAL | PAGE_ENTRY_SUPERVISOR,
+			map_location, map_location + 0x40000000);
+	if (e != PageTable::Err::NONE)
+		return LocalErr::KERNEL_MAP_FAIL;
+
+	e = page_table->map_memory__no_mm(
+			(PhysAddr)mem_layout.data.start_lma,
+			(LineAddr)mem_layout.data.start_vma,
+			mem_layout.data.size,
+			PAGE_ENTRY_GLOBAL | PAGE_ENTRY_SUPERVISOR,
+			map_location, map_location + 0x40000000);
+	if (e != PageTable::Err::NONE)
+		return LocalErr::KERNEL_MAP_FAIL;
+
+	return LocalErr::NONE;
 }
 
 } // x86

@@ -60,7 +60,7 @@ set(SECTION_MEMLAYOUT ${CMAKE_CURRENT_SOURCE_DIR}/scripts/section_memlayout.S)
 add_custom_command(
 	OUTPUT ${KERNEL_PATH}
 	COMMAND ${CMAKE_COMMAND} -E make_directory ${KERNEL_DIR}
-	COMMAND sh -c "${DUMP_SECTION_i386_SCRIPT} ${KERNEL_ARCH_i386_IMAGE} ${TARGET_FORMAT} ${CMAKE_C_COMPILER} | xargs ${CMAKE_LINKER} --whole-archive $<TARGET_FILE:kernel_cross> $<TARGET_FILE:kernel_arch_x86> -o ${KERNEL_PATH} -T ${LINKER_SCRIPT} --defsym __STACK_SIZE=${CONFIG_STACK_SIZE} --defsym __VM_SPLIT=${CONFIG_VM_SPLIT}"
+	COMMAND sh -c "${DUMP_SECTION_i386_SCRIPT} ${KERNEL_ARCH_i386_IMAGE} ${TARGET_FORMAT} ${CMAKE_C_COMPILER} ${CMAKE_OBJCOPY} | xargs ${CMAKE_LINKER} --whole-archive $<TARGET_FILE:kernel_cross> $<TARGET_FILE:kernel_arch_x86> -o ${KERNEL_PATH} -T ${LINKER_SCRIPT} --defsym __STACK_SIZE=${CONFIG_STACK_SIZE} --defsym __VM_SPLIT=${CONFIG_VM_SPLIT}"
 	COMMAND ${CMAKE_OBJCOPY} --set-section-flags .ldconfig.i386=alloc,readonly ${KERNEL_PATH} ${KERNEL_PATH}
 	DEPENDS ${KERNEL_ARCH_i386_IMAGE} kernel_arch_i386 kernel_arch_x86 kernel_cross ${LINKER_SCRIPT} ${DUMP_SECTION_i386_SCRIPT} ${SECTION_MEMLAYOUT}
 	COMMENT "Linking uncompressed kernel image"

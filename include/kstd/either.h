@@ -1,5 +1,5 @@
-#ifndef KSTD__EITHER_H__
-#define KSTD__EITHER_H__
+#ifndef _KSTD__EITHER_H__
+#define _KSTD__EITHER_H__
 
 #include "type_traits.h"
 
@@ -33,7 +33,7 @@ private:
 	static constexpr auto TOT_SIZE = max(sizeof(L), sizeof(R));
 	static constexpr auto TOT_ALIGNMENT = max(alignof(L), alignof(R));
 
-	char storage[TOT_SIZE] __attribute__((aligned(TOT_ALIGNMENT)));
+	alignas(TOT_ALIGNMENT) char storage[TOT_SIZE];
 	char current_type;
 };
 

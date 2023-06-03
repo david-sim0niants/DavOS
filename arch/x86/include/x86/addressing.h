@@ -1,5 +1,5 @@
-#ifndef x86__ADDRESSING_H__
-#define x86__ADDRESSING_H__
+#ifndef _x86__ADDRESSING_H__
+#define _x86__ADDRESSING_H__
 
 #include <stdint.h>
 #include <x86/config.h>

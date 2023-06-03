@@ -1,5 +1,5 @@
-#ifndef x86__CPUID_H__
-#define x86__CPUID_H__
+#ifndef _x86__CPUID_H__
+#define _x86__CPUID_H__
 
 
 namespace x86 {

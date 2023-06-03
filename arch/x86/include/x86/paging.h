@@ -1,10 +1,7 @@
-#ifndef x86__PAGING_H__
-#define x86__PAGING_H__
+#ifndef _x86__PAGING_H__
+#define _x86__PAGING_H__
 
-
-static inline void enable_paging()
-{
-}
-
+#include "paging/page_map.h"
+#include "paging/control.h"
 
 #endif

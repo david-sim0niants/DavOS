@@ -1,5 +1,5 @@
-#ifndef x86__VGA_TEXT_H__
-#define x86__VGA_TEXT_H__
+#ifndef _x86__VGA_TEXT_H__
+#define _x86__VGA_TEXT_H__
 
 #include <stddef.h>
 

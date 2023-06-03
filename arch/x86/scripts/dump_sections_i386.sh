@@ -3,6 +3,7 @@
 filename=$1
 target_format=$2
 cc=$3
+objcpy=$4
 
 section_memlayout="$(dirname $0)/section_memlayout.S"
 
@@ -24,7 +25,7 @@ do
 	section_obj_filename=$filename$section_name.o
 
 	# dump current section as a raw binary object file
-	objcopy --dump-section $section_name=$section_bin_filename $filename &&\
+	$objcpy --dump-section $section_name=$section_bin_filename $filename &&\
 	# convert the raw binary section object into the target format and
 	# set section name, section flags
 	# gcc will compile from an assembly file template, which will include

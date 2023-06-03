@@ -1,8 +1,8 @@
-#ifndef x86_PAGING__PAGE_MAP_LEVEL_2_H__
-#define x86_PAGING__PAGE_MAP_LEVEL_2_H__
+#ifndef _x86_PAGING__PAGE_MAP_LEVEL_2_H__
+#define _x86_PAGING__PAGE_MAP_LEVEL_2_H__
 
 #include <stdint.h>
-#include <x86/paging/page_table_entry.h>
+#include "page_table_entry.h"
 
 namespace x86 {
 
@@ -127,10 +127,6 @@ const unsigned PageTableEntry_<pml>::INDEX_BITS = PAGE_ENTRY_INDEX_BITS;
 
 template<> inline const unsigned PageTableEntry_<1>::CONTROLLED_BITS = 12;
 template<> inline const unsigned PageTableEntry_<2>::CONTROLLED_BITS = 22;
-
-enum class PageSize : uint32_t {
-	PS_4Kb, PS_4Mb
-};
 
 }
 

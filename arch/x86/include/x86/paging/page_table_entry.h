@@ -1,5 +1,5 @@
-#ifndef x86_PAGING__PAGE_TABLE_ENTRY_H__
-#define x86_PAGING__PAGE_TABLE_ENTRY_H__
+#ifndef _x86_PAGING__PAGE_TABLE_ENTRY_H__
+#define _x86_PAGING__PAGE_TABLE_ENTRY_H__
 
 #include <x86/config.h>
 #include <x86/addressing.h>

@@ -1,5 +1,5 @@
-#ifndef KSTD__TYPE_TRAITS_H__
-#define KSTD__TYPE_TRAITS_H__
+#ifndef _KSTD__TYPE_TRAITS_H__
+#define _KSTD__TYPE_TRAITS_H__
 
 namespace kstd {
 
@@ -20,6 +20,11 @@ constexpr bool types_match()
 {
 	return TypesMatch<T1, T2>::value;
 }
+
+
+template<typename T> struct RemoveReference 	 { typedef T Type; };
+template<typename T> struct RemoveReference<T&>  { typedef T Type; };
+template<typename T> struct RemoveReference<T&&> { typedef T Type; };
 
 }
 
