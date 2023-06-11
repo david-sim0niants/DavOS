@@ -65,6 +65,7 @@ static void cpuid__standard(ArchInfo &info)
 	CPUID();
 	info.feature_flags |= FEATURE_PSE * (!!(edx & (1 << 3)));
 	info.feature_flags |= FEATURE_PAE * (!!(edx & (1 << 6)));
+	info.feature_flags |= FEATURE_PGE * (!!(edx & (1 << 13)));
 
 	leaf = 0x07;
 	if (leaf > max_standard_leaf)

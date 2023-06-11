@@ -11,8 +11,9 @@ enum FeatureFlags {
 	FEATURE_PSE = 	0x1,
 	/* Physical-address extension. */
 	FEATURE_PAE = 	FEATURE_PSE << 1,
+	FEATURE_PGE = 	FEATURE_PAE << 1,
 	/* Supervisor-mode execution prevention. */
-	FEATURE_SMEP = 	FEATURE_PAE << 1,
+	FEATURE_SMEP = 	FEATURE_PGE << 1,
 	/* Supervisor-mode access prevention. */
 	FEATURE_SMAP = 	FEATURE_SMEP << 1,
 	/* 57bit linear addresses and 5-level paging. */

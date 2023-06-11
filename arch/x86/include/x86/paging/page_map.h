@@ -5,6 +5,7 @@
 #include <x86/config.h>
 #include <x86/addressing.h>
 #include <stddef.h>
+#include <kstd/either.h>
 
 
 #if CONFIG_ARCH == ARCH_x86_64
@@ -118,45 +119,59 @@ inline constexpr auto get_page_size_bytes(PageSize page_size)
 }
 
 
+enum class PageMapErr {
+	NONE = 0, EXISTING_PAGE_MAP, MAP_U_ON_S_AREA, MAP_W_ON_R_AREA,
+	MAP_X_ON_XD_AREA, NO_FREE_MEM, UNALIGNED_ADDRESS,
+	ADDRESS_MISMATCH, LINEADDR_OVERFLOW, PHYSADDR_OVERFLOW,
+};
+
 template<int pml>
 class PageTable_ {
 public:
 	friend class PageTable_<pml + 1>;
 
-	enum class Err {
-		NONE = 0, EXISTING_PAGE_MAP, NO_FREE_MEM, UNALIGNED_ADDRESS,
-		ADDRESS_MISMATCH, LINEADDR_OVERFLOW, PHYSADDR_OVERFLOW
-	};
+	PageMapErr map_memory__no_mm(LineAddr linaddr, PhysAddr phyaddr,
+			size_t mem_size, int flags,
+			uintptr_t &free_mem_beg, uintptr_t free_mem_end);
 
-	Err map_memory__no_mm(LineAddr linaddr, PhysAddr phyaddr,
-		size_t mem_size, int flags,
-		uintptr_t &free_mem_beg, uintptr_t free_mem_end);
-
-	Err map_pages__no_mm(LineAddr linaddr, PhysAddr phyaddr,
+	PageMapErr map_pages__no_mm(LineAddr linaddr, PhysAddr phyaddr,
 			size_t nr_pages, PageSize page_size, int flags,
 			uintptr_t &free_mem_beg, uintptr_t free_mem_end);
 
-	Err map_page__no_mm(LineAddr linaddr, PhysAddr phyaddr,
+	PageMapErr map_page__no_mm(LineAddr linaddr, PhysAddr phyaddr,
 			PageSize page_size, int flags,
 			uintptr_t &free_mem_beg, uintptr_t free_mem_end);
 
-	static constexpr auto NUM_ENTRIES = 1<<PageTableEntry_<pml>::INDEX_BITS;
-	static constexpr auto SIZE = NUM_ENTRIES * sizeof(PageTableEntry_<pml>);
+	static constexpr auto NR_ENTRIES= 1 << PageTableEntry_<pml>::INDEX_BITS;
+	static constexpr auto SIZE = NR_ENTRIES * sizeof(PageTableEntry_<pml>);
+	static constexpr auto CONTROLLED_MEM_PER_ENTRY
+		= LineSize(1) << PageTableEntry_<pml>::CONTROLLED_BITS;
+	static constexpr auto
+		CONTROLLED_MEM = CONTROLLED_MEM_PER_ENTRY * NR_ENTRIES;
 
 private:
-	Err map_pages__no_mm_no_chk(LineAddr linaddr, PhysAddr phyaddr,
+	PageMapErr map_pages__no_mm_no_chk(LineAddr linaddr, PhysAddr phyaddr,
 			size_t nr_pages, PageSize page_size, int flags,
-			uintptr_t &free_mem_beg, uintptr_t free_mem_end);
-
-	Err map_page__no_mm_no_chk(LineAddr linaddr, PhysAddr phyaddr,
-			PageSize page_size, int flags,
 			uintptr_t &free_mem_beg, uintptr_t free_mem_end);
 
 	template<PageSize page_size>
-	Err map_page__no_mm_internal(LineAddr linaddr, PhysAddr phyaddr,
+	PageMapErr map_pages__no_mm_const_ps(LineAddr linaddr, PhysAddr phyaddr,
+			size_t nr_pages, int flags,
+			uintptr_t &free_mem_beg, uintptr_t free_mem_end);
+
+	template<PageSize page_size>
+	PageMapErr map_page__no_mm_const_ps(LineAddr linaddr, PhysAddr phyaddr,
 		int flags, uintptr_t &free_mem_beg, uintptr_t free_mem_end);
 
-	PageTableEntry_<pml> entries[NUM_ENTRIES] = {};
+	static PageMapErr check_overflow(LineAddr linaddr, PhysAddr phyaddr,
+			size_t mem_size);
+
+	static
+	kstd::Either<PageTable_<pml - 1> *, PageMapErr> get_or_map_page_table(
+		PageTableEntry_<pml> &entry,
+		uintptr_t &free_mem_beg, uintptr_t free_mem_end);
+
+	PageTableEntry_<pml> entries[NR_ENTRIES] = {};
 };
 
 using PageTable = PageTable_<MAX_PAGE_MAP_LEVEL>;

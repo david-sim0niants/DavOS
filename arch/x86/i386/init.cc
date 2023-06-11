@@ -9,13 +9,15 @@
 
 #include <x86/cpuid.h>
 #include <x86/vga_text.h>
-#include <x86/paging/page_map.h>
+#include <x86/paging.h>
+
+#include "gdt.h"
 
 
 namespace x86 {
 
 enum LocalErr {
-	NONE = 0, KERNEL_MAP_FAIL,
+	NONE = 0, KERNEL_MAP_FAIL, PRE_KERNEL_IDENTITY_MAP_FAIL,
 };
 
 static void print_vendor_info(VGAText &vga_text, ArchInfo &arch_info);
@@ -29,9 +31,11 @@ struct KernelMemLayout {
 	KernelSection text, bss, rodata, data;
 };
 
-static LocalErr map_main_kernel_pages(const KernelMemLayout &mem_layout,
-		uintptr_t map_location);
+static LocalErr map_identity_pages_preceding_kernel(uintptr_t &map_location,
+		PageTable *page_table);
 
+static LocalErr map_kernel_memory(const KernelMemLayout &mem_layout,
+		uintptr_t &map_location, PageTable *page_table);
 
 constexpr char RED_ON_BLACK =
 	vga_text_make_color(VGA_TEXT_COLOR_RED, VGA_TEXT_COLOR_BLACK);
@@ -39,6 +43,9 @@ constexpr char GREEN_ON_BLACK =
 	vga_text_make_color(VGA_TEXT_COLOR_GREEN, VGA_TEXT_COLOR_BLACK);
 constexpr char WHITE_ON_BLACK =
 	vga_text_make_color(VGA_TEXT_COLOR_GREEN, VGA_TEXT_COLOR_BLACK);
+
+static void load_gdt();
+static void setup_data_segments();
 
 #if CONFIG_ARCH == ARCH_x86_64
 extern "C" int arch_init()
@@ -90,15 +97,36 @@ extern "C" int arch_init()
 		},
 	};
 
-	constexpr auto PAGE_TABLE_SIZE_BITS = 12;
 	uintptr_t map_location = (uintptr_t)__ldconfig__KERNEL_IMAGE_END_LMA;
+	constexpr auto PAGE_SHIFT = PAGE_SIZE_SHIFTS[0];
+	constexpr auto PAGE_MASK = (1 << PAGE_SHIFT) - 1;
+	if (map_location & PAGE_MASK)
+		map_location = ((map_location >> PAGE_SHIFT) + 1) << PAGE_SHIFT;
 
-	if ((map_location & ((1 << PAGE_TABLE_SIZE_BITS) - 1)) != 0)
-		map_location = ((map_location >> 12) + 1) << 12;
+	PageTable *page_table = reinterpret_cast<PageTable *>(map_location);
+	map_location += PageTable::SIZE;
 
-	auto e = map_main_kernel_pages(mem_layout, map_location);
-	if (e != LocalErr::NONE)
+	auto e = map_identity_pages_preceding_kernel(map_location, page_table);
+	if (e != LocalErr::NONE) {
+		vga_text.set_color(RED_ON_BLACK);
+		vga_text.puts(
+			"Failed to identity map pre kernel start memory.");
 		return -1;
+	}
+
+	e = map_kernel_memory(mem_layout, map_location, page_table);
+	if (e != LocalErr::NONE) {
+		vga_text.set_color(RED_ON_BLACK);
+		vga_text.puts("Failed to map kernel memory.");
+		return -1;
+	}
+
+	set_curr_pt_ptr((PhysAddr)page_table);
+	// TODO: check the cpuid features
+	enable_paging();
+
+	load_gdt();
+	setup_data_segments();
 
 	return 0;
 }
@@ -136,52 +164,110 @@ static void print_vendor_info(VGAText &vga_text, ArchInfo &arch_info)
 	vga_text.puts("\r\n");
 }
 
-
-static LocalErr map_main_kernel_pages(const KernelMemLayout &mem_layout,
-	uintptr_t map_location)
+static LocalErr map_identity_pages_preceding_kernel(uintptr_t &map_location,
+		PageTable *page_table)
 {
-	PageTable *page_table = reinterpret_cast<PageTable *>(map_location);
-	map_location += PageTable::SIZE;
+	size_t mem_size = (uintptr_t)__ldconfig__KERNEL_TEXT_START_LMA - 0;
+	auto e = page_table->map_memory__no_mm(0, 0, mem_size,
+			PAGE_ENTRY_GLOBAL | PAGE_ENTRY_SUPERVISOR
+			| PAGE_ENTRY_WRITE_ALLOWED
+			| PAGE_ENTRY_EXECUTE_DISABLED,
+			map_location, map_location + 0x10000000);
+	if (e != PageMapErr::NONE)
+		return LocalErr::PRE_KERNEL_IDENTITY_MAP_FAIL;
 
-	PageTable::Err e;
+	return LocalErr::NONE;
+}
+
+static LocalErr map_kernel_memory(const KernelMemLayout &mem_layout,
+	uintptr_t &map_location, PageTable *page_table)
+{
+	PageMapErr e;
 
 	e = page_table->map_memory__no_mm(
-			(PhysAddr)mem_layout.text.start_lma,
 			(LineAddr)mem_layout.text.start_vma,
+			(PhysAddr)mem_layout.text.start_lma,
 			mem_layout.text.size,
 			PAGE_ENTRY_GLOBAL | PAGE_ENTRY_SUPERVISOR,
-			map_location, map_location + 0x40000000);
-	if (e != PageTable::Err::NONE)
+			map_location, map_location + 0x10000000);
+	if (e != PageMapErr::NONE)
 		return LocalErr::KERNEL_MAP_FAIL;
 
 	e = page_table->map_memory__no_mm(
-			(PhysAddr)mem_layout.bss.start_lma,
 			(LineAddr)mem_layout.bss.start_vma,
+			(PhysAddr)mem_layout.bss.start_lma,
 			mem_layout.bss.size,
-			PAGE_ENTRY_GLOBAL | PAGE_ENTRY_SUPERVISOR,
-			map_location, map_location + 0x40000000);
-	if (e != PageTable::Err::NONE)
+			PAGE_ENTRY_GLOBAL | PAGE_ENTRY_SUPERVISOR
+			| PAGE_ENTRY_WRITE_ALLOWED
+			| PAGE_ENTRY_EXECUTE_DISABLED,
+			map_location, map_location + 0x10000000);
+	if (e != PageMapErr::NONE)
 		return LocalErr::KERNEL_MAP_FAIL;
 
 	e = page_table->map_memory__no_mm(
-			(PhysAddr)mem_layout.rodata.start_lma,
 			(LineAddr)mem_layout.rodata.start_vma,
+			(PhysAddr)mem_layout.rodata.start_lma,
 			mem_layout.rodata.size,
-			PAGE_ENTRY_GLOBAL | PAGE_ENTRY_SUPERVISOR,
-			map_location, map_location + 0x40000000);
-	if (e != PageTable::Err::NONE)
+			PAGE_ENTRY_GLOBAL | PAGE_ENTRY_SUPERVISOR
+			| PAGE_ENTRY_EXECUTE_DISABLED,
+			map_location, map_location + 0x10000000);
+	if (e != PageMapErr::NONE)
 		return LocalErr::KERNEL_MAP_FAIL;
 
 	e = page_table->map_memory__no_mm(
-			(PhysAddr)mem_layout.data.start_lma,
 			(LineAddr)mem_layout.data.start_vma,
+			(PhysAddr)mem_layout.data.start_lma,
 			mem_layout.data.size,
-			PAGE_ENTRY_GLOBAL | PAGE_ENTRY_SUPERVISOR,
-			map_location, map_location + 0x40000000);
-	if (e != PageTable::Err::NONE)
+			PAGE_ENTRY_GLOBAL | PAGE_ENTRY_SUPERVISOR
+			| PAGE_ENTRY_WRITE_ALLOWED
+			| PAGE_ENTRY_EXECUTE_DISABLED,
+			map_location, map_location + 0x10000000);
+	if (e != PageMapErr::NONE)
 		return LocalErr::KERNEL_MAP_FAIL;
 
 	return LocalErr::NONE;
+}
+
+GDT gdt = {
+	.null = {},
+	.code = {
+		.limit_0 = 0xFFFF,
+		.base_0 = 0,
+		.base_1 = 0,
+		.access = DT_ACCESS_S_BIT | DT_ACCESS_P_BIT
+			| DT_ACCESS_E_BIT | DT_ACCESS_RW_BIT,
+		.limit_1 = 0xF,
+		.flags = DT_FLAGS_G_BIT | DT_FLAGS_DB_BIT | DT_FLAGS_L_BIT,
+		.base_2 = 0,
+	},
+	.data = {
+		.limit_0 = 0xFFFF,
+		.base_0 = 0,
+		.base_1 = 0,
+		.access = DT_ACCESS_S_BIT | DT_ACCESS_P_BIT | DT_ACCESS_RW_BIT,
+		.limit_1 = 0xF,
+		.flags = DT_FLAGS_G_BIT | DT_FLAGS_DB_BIT,
+		.base_2 = 0,
+	},
+};
+
+static __FORCE_INLINE void load_gdt()
+{
+	struct {
+		uint32_t size = sizeof(gdt);
+		uint64_t addr = reinterpret_cast<unsigned long>(&gdt);
+	} __attribute__((packed)) gdt_pointer;
+	asm volatile ( 	"lgdt %0" :: "m"(gdt_pointer) : "memory");
+}
+
+static inline void setup_data_segments()
+{
+	asm volatile (	"movw %0, %%ax 		\n"
+			"movw %%ax, %%ds  	\n"
+			"movw %%ax, %%es        \n"
+			"movw %%ax, %%fs 	\n"
+			"movw %%ax, %%gs 	\n"
+			"movw %%ax, %%ss 	\n" :: "m" (gdt.data));
 }
 
 } // x86

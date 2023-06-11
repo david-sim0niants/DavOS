@@ -5,7 +5,7 @@ set(LINKER_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/linker_i386.ld)
 add_library(${TARGET_NAME} OBJECT entry.S init.cc ../vga_text.cc ../cpuid.cc
 	../page_map.cc)
 if (${CONFIG_ARCH} STREQUAL x86_64)
-	target_compile_options(${TARGET_NAME} PRIVATE -m32)
+	target_compile_options(${TARGET_NAME} PRIVATE -m32 -mno-sse)
 endif ()
 
 

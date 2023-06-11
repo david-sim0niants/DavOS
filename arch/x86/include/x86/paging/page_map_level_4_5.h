@@ -20,6 +20,8 @@ constexpr auto PTE_MAKE_PAGE_MASK(auto PAGE_SHIFT)
 constexpr auto PTE_PT_MASK = PTE_MAKE_PAGE_MASK(12);
 constexpr auto PTE_XD_BIT_LOC = 63;
 
+static constexpr auto MAX_POSSIBLE_PHYADDR_BITS = 52;
+
 template<int pml> inline bool PageTableEntry_<pml>::is_present()
 {
 	return !!(value & (1 << PTE_P_BIT_LOC));
@@ -107,7 +109,7 @@ inline void PageTableEntry_<pml>::map_page_table(PhysAddr pt_addr)
 template<int pml>
 inline void PageTableEntry_<pml>::set_execute_disabled(bool execute_disable)
 {
-	value &= uint64_t(execute_disable) << PTE_XD_BIT_LOC;
+	value |= uint64_t(execute_disable) << PTE_XD_BIT_LOC;
 }
 
 template<int pml> inline PhysAddr PageTableEntry_<pml>::get_page_addr()

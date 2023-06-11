@@ -84,7 +84,7 @@ _start:
 
 #if CONFIG_ARCH == x86_64
 	.code64
-	jmpq *__ldconfig__KERNEL_TEXT_START_VMA # jump onto kernel
+	jmpq $8, *__ldconfig__KERNEL_TEXT_START_VMA # jump onto kernel
 #else
 	jmpl *__ldconfig__KERNEL_TEXT_START_VMA # jump onto kernel
 #endif

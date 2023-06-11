@@ -19,6 +19,8 @@ constexpr auto PTE_L2_PAGE_MASK_LOW = -(uint32_t(1) << 22);
 constexpr auto PTE_L2_PAGE_MASK_HIGH = (uint32_t(1) << 21) - (1 << 13);
 constexpr auto PTE_XD_BIT_LOC = 63;
 
+static constexpr auto MAX_POSSIBLE_PHYADDR_BITS = 40;
+
 template<int pml> inline bool PageTableEntry_<pml>::is_present()
 {
 	return !!(value & (1 << PTE_P_BIT_LOC));
