@@ -40,6 +40,10 @@ endif ()
 include_directories(include)
 include_directories(${CMAKE_BINARY_DIR}/generated/include)
 
+set(IMAGE_DIR ${CMAKE_BINARY_DIR}/image)
+set(KERNEL_DIR ${IMAGE_DIR}/boot)
+set(KERNEL_PATH ${KERNEL_DIR}/kernel)
+
 add_subdirectory(arch)
 add_subdirectory(kernel)
 add_subdirectory(boot)
