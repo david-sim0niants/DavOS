@@ -4,13 +4,6 @@ SECTIONS
 {
 	. = 1M;
 
-	.multiboot_header.i386 BLOCK (4K) : ALIGN(4K)
-	{
-		KEEP(*(.multiboot_header.i386))
-	}
-
-	. = 1M + 4K;
-
 	.text.i386 : ALIGN(4K)
 	{
 		*(.text.i386)
@@ -23,7 +16,7 @@ SECTIONS
 		*(.rodata.i386)
 	}
 
-	.ldconfig.i386 :
+	.ldconfig :
 	{
 		PROVIDE(__ldconfig__STACK_TOP = .);
 		QUAD(__STACK_TOP)

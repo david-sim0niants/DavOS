@@ -7,8 +7,7 @@ objcpy=$4
 
 section_memlayout="$(dirname $0)/section_memlayout.S"
 
-sections=( 	"multiboot_header 	a"
-		"text 			ax"
+sections=( 	"text 			ax"
 		"data 			wa"
 		"rodata 		a")
 

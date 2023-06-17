@@ -3,7 +3,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/generated/include)
 
 
-# Declare x86_PAGE_MAP_LEVEL and PAGE_SIZE configs
+# Declare x86-specific configs.
 if (${CONFIG_ARCH} STREQUAL x86_64)
 	decl_config(CONFIG_x86_PAGE_MAP_LEVEL "PAGE_MAP_LEVEL_4" "Page map level")
 	decl_config(CONFIG_PAGE_SIZE 0x1000 "Page size")
@@ -50,7 +50,7 @@ endif ()
 set(DUMP_SECTION_i386_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/scripts/dump_sections_i386.sh)
 set(SECTION_MEMLAYOUT ${CMAKE_CURRENT_SOURCE_DIR}/scripts/section_memlayout.S)
 
-# This custom commands creates a boot directory where the kernel will be located
+# This custom command creates a boot directory where the kernel will be located
 # at, then runs a script that dumps necessary sections from the i386 image and
 # converts them into the target format. After that the linker links the dumped
 # sections with the kernel_cross and kernel_arch_x86 libraries into a single
