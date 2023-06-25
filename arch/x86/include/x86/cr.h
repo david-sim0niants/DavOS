@@ -81,6 +81,13 @@ __FORCE_INLINE void write_cr0(unsigned long val)
 	asm volatile ("mov %0, %%cr0" :: "r"(val) : "memory");
 }
 
+__FORCE_INLINE unsigned long read_cr3()
+{
+	unsigned long val;
+	asm volatile ("mov %%cr3, %0" : "=r"(val));
+	return val;
+}
+
 __FORCE_INLINE void write_cr3(unsigned long val)
 {
 	asm volatile ("mov %0, %%cr3" :: "r"(val) : "memory");
@@ -98,23 +105,24 @@ __FORCE_INLINE void write_cr4(unsigned long val)
 	asm volatile ("mov %0, %%cr4" :: "r"(val) : "memory");
 }
 
-__FORCE_INLINE void enable_efer()
-{
-	asm volatile ("mov %[MSR_EFER], %%ecx"
-			:: [MSR_EFER] "i" (MSR_EFER) : "memory");
-}
-
 __FORCE_INLINE unsigned long read_efer()
 {
 	unsigned val;
-	asm volatile ("rdmsr" : "=a"(val));
+	asm volatile ( 	"mov %[MSR_EFER], %%ecx 	\n"
+			"rdmsr"
+			: "=a"(val)
+			: [MSR_EFER] "i" (MSR_EFER)
+			: "memory");
 	return val;
 }
 
 __FORCE_INLINE void write_efer(unsigned long val)
 {
-	asm volatile ( 	"mov %[val], %%eax 	\n"
-			"wrmsr" :: [val] "r" (val) : "memory");
+	asm volatile ( 	"mov %[MSR_EFER], %%ecx 	\n"
+			"mov %[val], %%eax 		\n"
+			"wrmsr"
+			:: [MSR_EFER] "i" (MSR_EFER), [val] "r" (val)
+			: "memory");
 }
 
 }

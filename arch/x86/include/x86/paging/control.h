@@ -36,7 +36,6 @@ inline void enable_paging_level_3_PAE()
 	cr4_val |= (1 << CR4_BIT_PAE);
 	write_cr4(cr4_val);
 
-	enable_efer();
 	auto efer_val = read_efer();
 	efer_val &= ~(1 << EFER_BIT_LME);
 	write_efer(efer_val);
@@ -51,7 +50,6 @@ inline void enable_paging_level_4()
 	cr4_val &= ~(1 << CR4_BIT_LA57);
 	write_cr4(cr4_val);
 
-	enable_efer();
 	auto efer_val = read_efer();
 	efer_val |= (1 << EFER_BIT_LME);
 	write_efer(efer_val);
@@ -65,7 +63,6 @@ inline void enable_paging_level_5()
 	cr4_val |= (1 << CR4_BIT_PAE) | (1 << CR4_BIT_LA57);
 	write_cr4(cr4_val);
 
-	enable_efer();
 	auto efer_val = read_efer();
 	efer_val |= (1 << EFER_BIT_LME);
 	write_efer(efer_val);

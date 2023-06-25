@@ -38,12 +38,12 @@ template<int pml> inline bool PageTableEntry_<pml>::is_supervisor()
 
 template<int pml> inline bool PageTableEntry_<pml>::maps_page()
 {
-	return !(value & (1 << PTE_PS_BIT_LOC)) || (pml == 1);
+	return !!(value & (1 << PTE_PS_BIT_LOC)) || (pml == 1);
 }
 
 template<int pml> inline bool PageTableEntry_<pml>::maps_page_table()
 {
-	return !!(value & (1 << PTE_PS_BIT_LOC)) && (pml != 1);
+	return !(value & (1 << PTE_PS_BIT_LOC)) && (pml != 1);
 }
 
 template<int pml> inline bool PageTableEntry_<pml>::is_global()
@@ -90,7 +90,9 @@ inline void PageTableEntry_<pml>::map_page(PhysAddr page_addr, bool global)
 	value &= ~PTE_PAGE_MASK;
 	value |= page_addr_fields;
 	value |= int(global) << PTE_G_BIT_LOC;
-	value |= 1 << PTE_PS_BIT_LOC;
+
+	if (pml > 1)
+		value |= 1 << PTE_PS_BIT_LOC;
 }
 
 template<int pml>
@@ -100,7 +102,9 @@ inline void PageTableEntry_<pml>::map_page_table(PhysAddr pt_addr)
 	pt_addr &= PTE_PT_MASK;
 	value &= ~PTE_PT_MASK;
 	value |= pt_addr;
-	value &= ~(1 << PTE_PS_BIT_LOC);
+
+	if (pml > 1)
+		value &= ~(1 << PTE_PS_BIT_LOC);
 }
 
 template<int pml>

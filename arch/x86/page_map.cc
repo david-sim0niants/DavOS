@@ -58,7 +58,7 @@ template<int pml> PageMapErr PageTable_<pml>::map_memory__no_mm(
 }
 
 template<int pml> PageMapErr PageTable_<pml>::map_pages__no_mm(
-		LineAddr linaddr, PhysAddr phyaddr, size_t nr_pages,
+		LineAddr linaddr, PhysAddr phyaddr, LinePageN nr_pages,
 		PageSize page_size, int flags,
 		uintptr_t &free_mem_beg, uintptr_t free_mem_end)
 {
@@ -77,7 +77,7 @@ template<int pml> PageMapErr PageTable_<pml>::map_pages__no_mm(
 }
 
 template<int pml> PageMapErr PageTable_<pml>::map_pages__no_mm_no_chk(
-		LineAddr linaddr, PhysAddr phyaddr, size_t nr_pages,
+		LineAddr linaddr, PhysAddr phyaddr, LinePageN nr_pages,
 		PageSize page_size, int flags,
 		uintptr_t &free_mem_beg, uintptr_t free_mem_end)
 {
@@ -111,11 +111,11 @@ template<int pml> PageMapErr PageTable_<pml>::map_pages__no_mm_no_chk(
 
 template<int pml> template<PageSize page_size>
 __FORCE_INLINE PageMapErr PageTable_<pml>::map_pages__no_mm_const_ps(
-		LineAddr linaddr, PhysAddr phyaddr, size_t nr_pages, int flags,
-		uintptr_t &free_mem_beg, uintptr_t free_mem_end)
+		LineAddr linaddr, PhysAddr phyaddr, LinePageN nr_pages,
+		int flags, uintptr_t &free_mem_beg, uintptr_t free_mem_end)
 {
-	static constexpr
-	auto CONTROLLED_BITS = PageTableEntry_<pml>::CONTROLLED_BITS;
+	static constexpr auto
+		CONTROLLED_BITS = PageTableEntry_<pml>::CONTROLLED_BITS;
 
 	constexpr auto PAGE_SIZE_SHIFT = get_page_size_shift(page_size);
 
@@ -144,17 +144,19 @@ __FORCE_INLINE PageMapErr PageTable_<pml>::map_pages__no_mm_const_ps(
 	} else {
 		static_assert(pml > 1, "Can't have pml == 1 here.");
 
-		static constexpr auto MEM_REGION_PAGES
-			= ((size_t)1 << (CONTROLLED_BITS - PAGE_SIZE_SHIFT));
-		static constexpr auto
-			MEM_REGION_SIZE = PageTable_<pml - 1>::CONTROLLED_MEM;
-		static constexpr auto MEM_REGION_MASK = MEM_REGION_SIZE - 1;
+		static constexpr LineSize
+			MEM_REGION_SIZE = LineSize(1) << CONTROLLED_BITS;
+		static constexpr LinePageN
+			MEM_REGION_PAGES = MEM_REGION_SIZE >> PAGE_SIZE_SHIFT;
+		static constexpr LinePageN
+			MEM_REGION_PAGES_MASK = MEM_REGION_PAGES - 1;
 
 		auto curr_rn = get_pte_idx<pml>(linaddr);
 
-		for (; nr_pages > 0 ; linaddr += MEM_REGION_SIZE, ++curr_rn) {
-			size_t nr_pages_to_map =
-				MEM_REGION_SIZE - (linaddr & MEM_REGION_MASK);
+		for (; nr_pages > 0 ; ++curr_rn) {
+			const LinePageN page_num = linaddr >> PAGE_SIZE_SHIFT;
+			LinePageN nr_pages_to_map = MEM_REGION_PAGES -
+				(page_num & MEM_REGION_PAGES_MASK);
 			nr_pages_to_map = kstd::min(nr_pages_to_map, nr_pages);
 
 			PageTableEntry_<pml> &entry = entries[curr_rn];
@@ -184,6 +186,7 @@ __FORCE_INLINE PageMapErr PageTable_<pml>::map_pages__no_mm_const_ps(
 				return e;
 
 			nr_pages -= nr_pages_to_map;
+			linaddr += nr_pages_to_map << PAGE_SIZE_SHIFT;
 		}
 	}
 

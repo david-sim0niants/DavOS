@@ -22,6 +22,9 @@ constexpr auto PTE_XD_BIT_LOC = 63;
 
 static constexpr auto MAX_POSSIBLE_PHYADDR_BITS = 52;
 
+static constexpr auto MAX_PML_HAVING_PS_BIT = 3;
+static constexpr auto MAX_PML_HAVING_GLOBAL_BIT = 3;
+
 template<int pml> inline bool PageTableEntry_<pml>::is_present()
 {
 	return !!(value & (1 << PTE_P_BIT_LOC));
@@ -39,27 +42,30 @@ template<int pml> inline bool PageTableEntry_<pml>::is_supervisor()
 
 template<int pml> inline bool PageTableEntry_<pml>::maps_page()
 {
-	if constexpr (pml > 3)
+	if constexpr (pml > MAX_PML_HAVING_PS_BIT)
 		return false;
 	else if constexpr (pml == 1)
 		return true;
-	else
-		return !(value & (1 << PTE_PS_BIT_LOC));
-}
-
-template<int pml> inline bool PageTableEntry_<pml>::maps_page_table()
-{
-	if constexpr (pml > 3)
-		return true;
-	else if constexpr (pml == 1)
-		return false;
 	else
 		return !!(value & (1 << PTE_PS_BIT_LOC));
 }
 
+template<int pml> inline bool PageTableEntry_<pml>::maps_page_table()
+{
+	if constexpr (pml > MAX_PML_HAVING_PS_BIT)
+		return true;
+	else if constexpr (pml == 1)
+		return false;
+	else
+		return !(value & (1 << PTE_PS_BIT_LOC));
+}
+
 template<int pml> inline bool PageTableEntry_<pml>::is_global()
 {
-	return !!(value & (1 << PTE_G_BIT_LOC)) && (pml < 4);
+	if constexpr (pml > MAX_PML_HAVING_GLOBAL_BIT)
+		return false;
+	else
+		return !!(value & (1 << PTE_G_BIT_LOC));
 }
 
 template<int pml> inline bool PageTableEntry_<pml>::is_execute_disabled()
@@ -93,7 +99,12 @@ inline void PageTableEntry_<pml>::map_page(PhysAddr page_addr, bool global)
 	page_addr &= PAGE_MASK;
 	value &= ~PAGE_MASK;
 	value |= page_addr;
-	value |= int(global) << PTE_G_BIT_LOC;
+
+	if constexpr (pml <= MAX_PML_HAVING_GLOBAL_BIT)
+		value |= int(global) << PTE_G_BIT_LOC;
+
+	if constexpr (1 < pml && pml <= MAX_PML_HAVING_PS_BIT)
+		value |= 1 << PTE_PS_BIT_LOC;
 }
 
 template<int pml>
@@ -103,7 +114,9 @@ inline void PageTableEntry_<pml>::map_page_table(PhysAddr pt_addr)
 	pt_addr &= PTE_PT_MASK;
 	value &= ~PTE_PT_MASK;
 	value |= pt_addr;
-	value &= ~(1 << PTE_PS_BIT_LOC);
+
+	if constexpr (1 < pml && pml <= MAX_PML_HAVING_PS_BIT)
+		value &= ~(1 << PTE_PS_BIT_LOC);
 }
 
 template<int pml>
@@ -132,8 +145,9 @@ const unsigned PageTableEntry_<pml>::INDEX_BITS = PAGE_ENTRY_INDEX_BITS;
 template<>
 inline const unsigned PageTableEntry_<1>::CONTROLLED_BITS = 12;
 template<int pml>
-inline const unsigned PageTableEntry_<pml>::CONTROLLED_BITS =
-	PageTableEntry_<pml - 1>::CONTROLLED_BITS + INDEX_BITS;
+inline const unsigned PageTableEntry_<pml>::
+	CONTROLLED_BITS = PageTableEntry_<pml - 1>::CONTROLLED_BITS
+			+ PageTableEntry_<pml - 1>::INDEX_BITS;
 
 }
 

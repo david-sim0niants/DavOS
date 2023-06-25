@@ -167,11 +167,10 @@ static void print_vendor_info(VGAText &vga_text, ArchInfo &arch_info)
 static LocalErr map_identity_pages_preceding_kernel(uintptr_t &map_location,
 		PageTable *page_table)
 {
-	size_t mem_size = (uintptr_t)__ldconfig__KERNEL_TEXT_START_LMA - 0;
+	const size_t mem_size = (uintptr_t)__ldconfig__KERNEL_TEXT_START_LMA-0;
 	auto e = page_table->map_memory__no_mm(0, 0, mem_size,
 			PAGE_ENTRY_GLOBAL | PAGE_ENTRY_SUPERVISOR
-			| PAGE_ENTRY_WRITE_ALLOWED
-			| PAGE_ENTRY_EXECUTE_DISABLED,
+			| PAGE_ENTRY_WRITE_ALLOWED,
 			map_location, map_location + 0x10000000);
 	if (e != PageMapErr::NONE)
 		return LocalErr::PRE_KERNEL_IDENTITY_MAP_FAIL;

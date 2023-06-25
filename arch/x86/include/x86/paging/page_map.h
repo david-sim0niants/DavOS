@@ -135,7 +135,7 @@ public:
 			uintptr_t &free_mem_beg, uintptr_t free_mem_end);
 
 	PageMapErr map_pages__no_mm(LineAddr linaddr, PhysAddr phyaddr,
-			size_t nr_pages, PageSize page_size, int flags,
+			LinePageN nr_pages, PageSize page_size, int flags,
 			uintptr_t &free_mem_beg, uintptr_t free_mem_end);
 
 	PageMapErr map_page__no_mm(LineAddr linaddr, PhysAddr phyaddr,
@@ -151,12 +151,12 @@ public:
 
 private:
 	PageMapErr map_pages__no_mm_no_chk(LineAddr linaddr, PhysAddr phyaddr,
-			size_t nr_pages, PageSize page_size, int flags,
+			LinePageN nr_pages, PageSize page_size, int flags,
 			uintptr_t &free_mem_beg, uintptr_t free_mem_end);
 
 	template<PageSize page_size>
 	PageMapErr map_pages__no_mm_const_ps(LineAddr linaddr, PhysAddr phyaddr,
-			size_t nr_pages, int flags,
+			LinePageN nr_pages, int flags,
 			uintptr_t &free_mem_beg, uintptr_t free_mem_end);
 
 	template<PageSize page_size>
@@ -171,6 +171,7 @@ private:
 		PageTableEntry_<pml> &entry,
 		uintptr_t &free_mem_beg, uintptr_t free_mem_end);
 
+public:
 	PageTableEntry_<pml> entries[NR_ENTRIES] = {};
 };
 
