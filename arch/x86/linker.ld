@@ -11,6 +11,11 @@ SECTIONS
 
 	PROVIDE(_start = ADDR(.text.i386));
 
+	.bss.i386 (NOLOAD) : ALIGN(4K)
+	{
+		QUAD(0)
+	}
+
 	.rodata.i386 : ALIGN(4K)
 	{
 		*(.rodata.i386)

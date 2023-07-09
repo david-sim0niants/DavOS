@@ -11,6 +11,11 @@ SECTIONS
 		*(.text.*)
 	}
 
+	.bss (NOLOAD) : ALIGN(4K)
+	{
+		*(.bss)
+	}
+
 	.rodata : ALIGN(4K)
 	{
 		*(.rodata)

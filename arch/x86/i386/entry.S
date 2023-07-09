@@ -61,6 +61,7 @@ data_end:
 
 
 #include <config.h>
+#include "gdt.h"
 
 .section .text
 
@@ -69,8 +70,8 @@ data_end:
 # initial stack grows below the address where kernel start function will be located
 .globl __ldconfig__STACK_TOP
 
-.type arch_init, @function
-.globl arch_init
+.type early_init, @function
+.globl early_init
 
 .type _start, @function
 .globl _start
@@ -78,19 +79,33 @@ _start:
 	cli
 	mov (__ldconfig__STACK_TOP), %esp # setup stack pointer
 	call get_multiboot_info # get multiboot info
-	call arch_init # init the CPU
+	call early_init # early CPU and kernel initialization
 	test %eax, %eax
-	jnz .L_start_fail
+	jnz .Lstart_fail
 
-#if CONFIG_ARCH == x86_64
+	call setup_gdt
+.Lload_gdt:
+	lgdt (%eax)
+	mov $0x10, %ax 	# 0x10 = sizeof(GDT_Entry) * 2, where
+			# 2 == data segment selector index
+	mov %ax, %ds
+	mov %ax, %es
+	mov %ax, %fs
+	mov %ax, %gs
+	mov %ax, %ss
+	ljmp $0x8, $.Lnext 	# 0x8 == sizeof(GDT_Entry) * 1, where
+				# 1 == code segment selector index
+.Lnext:
+#if CONFIG_ARCH == ARCH_x86_64
 	.code64
-	jmpq $8, *__ldconfig__KERNEL_TEXT_START_VMA # jump onto kernel
-#else
-	jmpl *__ldconfig__KERNEL_TEXT_START_VMA # jump onto kernel
-#endif
+	movq __ldconfig__KERNEL_TEXT_START_VMA(%rip), %rax
+	callq *%rax # jump onto kernel
 	.code32
+#else
+	jmp *__ldconfig__KERNEL_TEXT_START_VMA # jump onto kernel
+#endif
 
-.L_start_fail:
+.Lstart_fail:
 	hlt
 
 
@@ -98,9 +113,9 @@ _start:
 
 get_multiboot_info:
 	cmp $MULTIBOOT2_MAGIC, %eax # compare EAX value with the magic number
-	je .L_booted_via_multiboot # avoid setting EBX value to zero
+	je .Lbooted_via_multiboot # avoid setting EBX value to zero
 	xor %ebx, %ebx
-.L_booted_via_multiboot: # assign the pointer or NULL to p_multiboot_info
+.Lbooted_via_multiboot: # assign the pointer or NULL to p_multiboot_info
 	mov %ebx, p_multiboot_info
 	ret
 

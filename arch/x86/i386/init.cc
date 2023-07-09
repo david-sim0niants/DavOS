@@ -11,8 +11,7 @@
 #include <x86/vga_text.h>
 #include <x86/paging.h>
 
-#include "gdt.h"
-
+#include <kstd/new.h>
 
 namespace x86 {
 
@@ -44,11 +43,8 @@ constexpr char GREEN_ON_BLACK =
 constexpr char WHITE_ON_BLACK =
 	vga_text_make_color(VGA_TEXT_COLOR_GREEN, VGA_TEXT_COLOR_BLACK);
 
-static void load_gdt();
-static void setup_data_segments();
-
 #if CONFIG_ARCH == ARCH_x86_64
-extern "C" int arch_init()
+extern "C" int early_init()
 {
 	vga_text_clear();
 
@@ -98,6 +94,7 @@ extern "C" int arch_init()
 	};
 
 	uintptr_t map_location = (uintptr_t)__ldconfig__KERNEL_IMAGE_END_LMA;
+	new ((void *)map_location) PageTable;
 	constexpr auto PAGE_SHIFT = PAGE_SIZE_SHIFTS[0];
 	constexpr auto PAGE_MASK = (1 << PAGE_SHIFT) - 1;
 	if (map_location & PAGE_MASK)
@@ -125,13 +122,10 @@ extern "C" int arch_init()
 	// TODO: check the cpuid features
 	enable_paging();
 
-	load_gdt();
-	setup_data_segments();
-
 	return 0;
 }
 #else
-int arch_init()
+int early_init()
 {
 	// unimplemented
 	return -2;
@@ -225,48 +219,6 @@ static LocalErr map_kernel_memory(const KernelMemLayout &mem_layout,
 		return LocalErr::KERNEL_MAP_FAIL;
 
 	return LocalErr::NONE;
-}
-
-GDT gdt = {
-	.null = {},
-	.code = {
-		.limit_0 = 0xFFFF,
-		.base_0 = 0,
-		.base_1 = 0,
-		.access = DT_ACCESS_S_BIT | DT_ACCESS_P_BIT
-			| DT_ACCESS_E_BIT | DT_ACCESS_RW_BIT,
-		.limit_1 = 0xF,
-		.flags = DT_FLAGS_G_BIT | DT_FLAGS_DB_BIT | DT_FLAGS_L_BIT,
-		.base_2 = 0,
-	},
-	.data = {
-		.limit_0 = 0xFFFF,
-		.base_0 = 0,
-		.base_1 = 0,
-		.access = DT_ACCESS_S_BIT | DT_ACCESS_P_BIT | DT_ACCESS_RW_BIT,
-		.limit_1 = 0xF,
-		.flags = DT_FLAGS_G_BIT | DT_FLAGS_DB_BIT,
-		.base_2 = 0,
-	},
-};
-
-static __FORCE_INLINE void load_gdt()
-{
-	struct {
-		uint32_t size = sizeof(gdt);
-		uint64_t addr = reinterpret_cast<unsigned long>(&gdt);
-	} __attribute__((packed)) gdt_pointer;
-	asm volatile ( 	"lgdt %0" :: "m"(gdt_pointer) : "memory");
-}
-
-static inline void setup_data_segments()
-{
-	asm volatile (	"movw %0, %%ax 		\n"
-			"movw %%ax, %%ds  	\n"
-			"movw %%ax, %%es        \n"
-			"movw %%ax, %%fs 	\n"
-			"movw %%ax, %%gs 	\n"
-			"movw %%ax, %%ss 	\n" :: "m" (gdt.data));
 }
 
 } // x86

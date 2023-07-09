@@ -5,9 +5,13 @@
 #include <kstd/algorithm.h>
 #include <string.h>
 #include <compiler_attributes.h>
+#include <x86/vga_text.h>
 
 
 namespace x86 {
+
+extern VGAText vga_text;
+extern void print_hex(unsigned long num, VGAText &vga_text);
 
 enum class LocalErr {
 	NONE = 0,
@@ -140,6 +144,9 @@ __FORCE_INLINE PageMapErr PageTable_<pml>::map_pages__no_mm_const_ps(
 			entry.map_page(phyaddr, flags & PAGE_ENTRY_GLOBAL);
 			set_entry_flags(entry, flags);
 			entry.set_present(true);
+			//
+			// vga_text.puts(" 0x");
+			// print_hex(entry.value, vga_text);
 		}
 	} else {
 		static_assert(pml > 1, "Can't have pml == 1 here.");
