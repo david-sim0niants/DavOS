@@ -18,10 +18,11 @@ constexpr T &&forward(typename RemoveReference<T>::Type &t)
 }
 
 template<typename T>
-constexpr T&& forward(typename RemoveReference<T>::Type&& t)
+constexpr T &&forward(typename RemoveReference<T>::Type &&t)
 {
 	return static_cast<T &&>(t);
 }
+
 }
 
 #endif
