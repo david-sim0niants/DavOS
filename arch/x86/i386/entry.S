@@ -121,3 +121,4 @@ get_multiboot_info:
 
 .section .kernel_start_placeholder, "ax", @progbits
 	hlt # placeholder code for the kernel start
+

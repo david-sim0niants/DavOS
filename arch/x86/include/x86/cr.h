@@ -2,72 +2,78 @@
 #define _x86__CR_H__
 
 #include <compiler_attributes.h>
+#include <kstd/enum.h>
 
 namespace x86 {
 
-enum CR0_Bits {
-	CR0_BIT_PE = 0,
-	CR0_BIT_MP = 1,
-	CR0_BIT_EM = 2,
-	CR0_BIT_TS = 3,
-	CR0_BIT_ET = 4,
-	CR0_BIT_NE = 5,
-	CR0_BIT_WP = 16,
-	CR0_BIT_AM = 18,
-	CR0_BIT_NW = 29,
-	CR0_BIT_CD = 30,
-	CR0_BIT_PG = 31,
+struct CR0_Flag {
+	enum : unsigned long {
+		PE = 1 << 0,
+		MP = 1 << 1,
+		EM = 1 << 2,
+		TS = 1 << 3,
+		ET = 1 << 4,
+		NE = 1 << 5,
+		WP = 1 << 16,
+		AM = 1 << 18,
+		NW = 1 << 29,
+		CD = 1 << 30,
+		PG = unsigned(1) << 31,
+	};
 };
 
-enum CR4_Bits {
-	CR4_BIT_VME 		= 0,
-	CR4_BIT_PVI 		= 1,
-	CR4_BIT_TSD 		= 2,
-	CR4_BIT_DE  		= 3,
-	CR4_BIT_PSE 		= 4,
-	CR4_BIT_PAE 		= 5,
-	CR4_BIT_MCE 		= 6,
-	CR4_BIT_PGE 		= 7,
-	CR4_BIT_PCE 		= 8,
-	CR4_BIT_OSFXSR 		= 9,
-	CR4_BIT_OSXMMEXCPT 	= 10,
-	CR4_BIT_UMIP 		= 11,
-	CR4_BIT_LA57 		= 12,
-	CR4_BIT_VMXE 		= 13,
-	CR4_BIT_SMXE 		= 14,
-	CR4_BIT_FSFSBASE 	= 16,
-	CR4_BIT_PCIDE 		= 17,
-	CR4_BIT_OSXSAVE 	= 18,
-	CR4_BIT_KL 		= 19,
-	CR4_BIT_SMEP 		= 20,
-	CR4_BIT_SMAP 		= 21,
-	CR4_BIT_PKE 		= 22,
-	CR4_BIT_CET 		= 23,
-	CR4_BIT_PKS 		= 24,
-	CR4_BIT_UINTR 		= 25
+struct CR4_Flag {
+	enum : unsigned long {
+		VME 		= 1 << 0,
+		PVI 		= 1 << 1,
+		TSD 		= 1 << 2,
+		DE  		= 1 << 3,
+		PSE 		= 1 << 4,
+		PAE 		= 1 << 5,
+		MCE 		= 1 << 6,
+		PGE 		= 1 << 7,
+		PCE 		= 1 << 8,
+		OSFXSR 		= 1 << 9,
+		OSXMMEXCPT 	= 1 << 10,
+		UMIP 		= 1 << 11,
+		LA57 		= 1 << 12,
+		VMXE 		= 1 << 13,
+		SMXE 		= 1 << 14,
+		FSFSBASE 	= 1 << 16,
+		PCIDE 		= 1 << 17,
+		OSXSAVE 	= 1 << 18,
+		KL 		= 1 << 19,
+		SMEP 		= 1 << 20,
+		SMAP 		= 1 << 21,
+		PKE 		= 1 << 22,
+		CET 		= 1 << 23,
+		PKS 		= 1 << 24,
+		UINTR 		= 1 << 25
+	};
 };
 
-enum EFER_Bits {
-	EFER_BIT_SCE 		= 0,
-	EFER_BIT_DPE 		= 1,
-	EFER_BIT_SEWBED 	= 2,
-	EFER_BIT_GEWBED 	= 3,
-	EFER_BIT_L2D    	= 4,
-	EFER_BIT_LME    	= 8,
- 	EFER_BIT_LMA    	= 10,
- 	EFER_BIT_NXE    	= 11,
- 	EFER_BIT_SVME   	= 12,
- 	EFER_BIT_LMSLE  	= 13,
- 	EFER_BIT_FFXSR  	= 14,
- 	EFER_BIT_TCE    	= 15,
- 	EFER_BIT_MCOMMIT	= 17,
- 	EFER_BIT_INTWB  	= 18,
- 	EFER_BIT_UAIE   	= 20,
- 	EFER_BIT_AIBRSE 	= 21,
+struct EFER_Flag {
+	enum : unsigned long {
+		SCE 	= 1 << 0,
+		DPE 	= 1 << 1,
+		SEWBED 	= 1 << 2,
+		GEWBED 	= 1 << 3,
+		L2D    	= 1 << 4,
+		LME    	= 1 << 8,
+		LMA    	= 1 << 10,
+		NXE    	= 1 << 11,
+		SVME   	= 1 << 12,
+		LMSLE  	= 1 << 13,
+		FFXSR  	= 1 << 14,
+		CE    	= 1 << 15,
+		COMMIT	= 1 << 17,
+		INTWB  	= 1 << 18,
+		UAIE   	= 1 << 20,
+		AIBRSE 	= 1 << 21,
+	};
 };
 
-static constexpr auto MSR_EFER = 0xC0000080;
-
+constexpr auto efer_msr_num = 0xC0000080;
 
 __FORCE_INLINE unsigned long read_cr0()
 {
@@ -108,20 +114,20 @@ __FORCE_INLINE void write_cr4(unsigned long val)
 __FORCE_INLINE unsigned long read_efer()
 {
 	unsigned val;
-	asm volatile ( 	"mov %[MSR_EFER], %%ecx 	\n"
+	asm volatile ( 	"mov %[msr_efer], %%ecx 	\n"
 			"rdmsr"
 			: "=a"(val)
-			: [MSR_EFER] "i" (MSR_EFER)
+			: [msr_efer] "i" (efer_msr_num)
 			: "memory");
 	return val;
 }
 
 __FORCE_INLINE void write_efer(unsigned long val)
 {
-	asm volatile ( 	"mov %[MSR_EFER], %%ecx 	\n"
+	asm volatile ( 	"mov %[msr_efer], %%ecx 	\n"
 			"mov %[val], %%eax 		\n"
 			"wrmsr"
-			:: [MSR_EFER] "i" (MSR_EFER), [val] "r" (val)
+			:: [msr_efer] "i" (efer_msr_num), [val] "r" (val)
 			: "memory");
 }
 

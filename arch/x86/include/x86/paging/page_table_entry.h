@@ -6,7 +6,7 @@
 
 namespace x86 {
 
-constexpr int MAX_PAGE_MAP_LEVEL =
+constexpr int max_page_map_level =
 #if CONFIG_x86_PAGE_MAP_LEVEL == x86_PAGE_MAP_LEVEL_2
 	2
 #elif CONFIG_x86_PAGE_MAP_LEVEL == x86_PAGE_MAP_LEVEL_3_PAE
@@ -31,7 +31,7 @@ using PageTableEntryValue =
 
 template<int pml>
 struct PageTableEntry_ {
-	static_assert(pml <= MAX_PAGE_MAP_LEVEL, "Page map level is too high.");
+	static_assert(pml <= max_page_map_level, "Page map level is too high.");
 	static_assert(pml > 0,
 		"Page table entry can't have a page map level lower than 1.");
 
@@ -53,8 +53,8 @@ struct PageTableEntry_ {
 	PhysAddr get_page_addr();
 	PhysAddr get_page_table_addr();
 
-	static const unsigned INDEX_BITS;
-	static const unsigned CONTROLLED_BITS;
+	static const unsigned index_bits;
+	static const unsigned controlled_bits;
 	PageTableEntryValue value;
 };
 

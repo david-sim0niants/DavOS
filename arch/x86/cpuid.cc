@@ -9,9 +9,9 @@
 
 namespace x86 {
 /* Get standard CPUID info. */
-static void cpuid__standard(struct ArchInfo &info);
+static void cpuid__standard(struct ArchInfo& info);
 /* Get extended CPUID info. */
-static void cpuid__extended(struct ArchInfo &info);
+static void cpuid__extended(struct ArchInfo& info);
 
 bool check_cpuid_presence()
 {
@@ -31,13 +31,13 @@ bool check_cpuid_presence()
 	return curr_flags != prev_flags;
 }
 
-void cpuid__assume_cpuid_present(ArchInfo &info)
+void cpuid__assume_cpuid_present(ArchInfo& info)
 {
 	cpuid__standard(info);
 	cpuid__extended(info);
 }
 
-bool cpuid(ArchInfo &info)
+bool cpuid(ArchInfo& info)
 {
 	if (!check_cpuid_presence())
 		return false;
@@ -45,7 +45,7 @@ bool cpuid(ArchInfo &info)
 	return true;
 }
 
-static void cpuid__standard(ArchInfo &info)
+static void cpuid__standard(ArchInfo& info)
 {
 	uint32_t eax = 0, ebx = 0, ecx = 0, edx = 0;
 	uint32_t leaf = 0, subleaf = 0;
@@ -57,26 +57,28 @@ static void cpuid__standard(ArchInfo &info)
 	memcpy(info.vendor_id + 8, &ecx, 4);
 
 	uint32_t max_standard_leaf = eax;
-	info.feature_flags = 0;
+	info.feature_flags = FeatureFlags::None;
 
 	leaf = 0x01;
 	if (leaf > max_standard_leaf)
 		return;
 	CPUID();
-	info.feature_flags |= FEATURE_PSE * (!!(edx & (1 << 3)));
-	info.feature_flags |= FEATURE_PAE * (!!(edx & (1 << 6)));
-	info.feature_flags |= FEATURE_PGE * (!!(edx & (1 << 13)));
+	info.feature_flags = info.feature_flags
+		| kstd::switch_flag(FeatureFlags::PSE, edx & (1 << 3))
+		| kstd::switch_flag(FeatureFlags::PAE, edx & (1 << 6))
+		| kstd::switch_flag(FeatureFlags::PGE, edx & (1 << 13));
 
 	leaf = 0x07;
 	if (leaf > max_standard_leaf)
 		return;
 	CPUID();
-	info.feature_flags |= FEATURE_SMEP * (!!(ebx & (1 << 7)));
-	info.feature_flags |= FEATURE_SMAP * (!!(ebx & (1 << 20)));
-	info.feature_flags |= FEATURE_LA57 * (!!(ecx & (1 << 16)));
+	info.feature_flags = info.feature_flags
+		| kstd::switch_flag(FeatureFlags::SMEP, ebx & (1 << 7))
+		| kstd::switch_flag(FeatureFlags::SMAP, ebx & (1 << 20))
+		| kstd::switch_flag(FeatureFlags::LA57, ecx & (1 << 16));
 }
 
-static void cpuid__extended(ArchInfo &info)
+static void cpuid__extended(ArchInfo& info)
 {
 	uint32_t eax = 0, ebx = 0, ecx = 0, edx = 0;
 	uint32_t leaf = 0x80000000, subleaf = 0;
@@ -84,15 +86,16 @@ static void cpuid__extended(ArchInfo &info)
 	CPUID();
 
 	uint32_t max_extended_leaf = eax;
-	info.ext_feature_flags = 0;
+	info.ext_feature_flags = ExtFeatureFlags::None;
 
 	leaf = 0x80000001;
 	if (leaf > max_extended_leaf)
 		return;
 	CPUID();
-	info.ext_feature_flags |= EXT_FEATURE_NX * (!!(edx & (1 << 20)));
-	info.ext_feature_flags |= EXT_FEATURE_PAGE_1GB * (!!(edx & (1 << 26)));
-	info.ext_feature_flags |= EXT_FEATURE_LONG_MODE * (!!(edx & (1 << 29)));
+	info.ext_feature_flags = info.ext_feature_flags
+		| kstd::switch_flag(ExtFeatureFlags::NX, edx & (1<<20))
+		| kstd::switch_flag(ExtFeatureFlags::Page_1Gb, (edx & (1<<26)))
+		| kstd::switch_flag(ExtFeatureFlags::LongMode, (edx & (1<<29)));
 
 	leaf = 0x80000008;
 	if (leaf > max_extended_leaf)

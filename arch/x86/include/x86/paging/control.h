@@ -16,15 +16,15 @@ inline void set_curr_pt_ptr(PhysAddr pt_addr)
 
 inline void enable_paging__common()
 {
-	auto cr0_val = read_cr0();
-	cr0_val |= (1 << CR0_BIT_WP) | (1 << CR0_BIT_PG);
+	unsigned long cr0_val = read_cr0();
+	cr0_val |= CR0_Flag::WP | CR0_Flag::PG;
 	write_cr0(cr0_val);
 }
 
 inline void enable_paging_level_2()
 {
-	auto cr4_val = read_cr4();
-	cr4_val &= ~(1 << CR4_BIT_PAE);
+	unsigned long cr4_val = read_cr4();
+	cr4_val &= ~CR4_Flag::PAE;
 	write_cr4(cr4_val);
 
 	enable_paging__common();
@@ -32,12 +32,12 @@ inline void enable_paging_level_2()
 
 inline void enable_paging_level_3_PAE()
 {
-	auto cr4_val = read_cr4();
-	cr4_val |= (1 << CR4_BIT_PAE);
+	unsigned long cr4_val = read_cr4();
+	cr4_val |= CR4_Flag::PAE;
 	write_cr4(cr4_val);
 
-	auto efer_val = read_efer();
-	efer_val &= ~(1 << EFER_BIT_LME);
+	unsigned long efer_val = read_efer();
+	efer_val &= ~EFER_Flag::LME;
 	write_efer(efer_val);
 
 	enable_paging__common();
@@ -45,13 +45,13 @@ inline void enable_paging_level_3_PAE()
 
 inline void enable_paging_level_4()
 {
-	auto cr4_val = read_cr4();
-	cr4_val |= (1 << CR4_BIT_PAE);
-	cr4_val &= ~(1 << CR4_BIT_LA57);
+	unsigned long cr4_val = read_cr4();
+	cr4_val |= CR4_Flag::PAE;
+	cr4_val &= ~CR4_Flag::LA57;
 	write_cr4(cr4_val);
 
-	auto efer_val = read_efer();
-	efer_val |= (1 << EFER_BIT_LME);
+	unsigned long efer_val = read_efer();
+	efer_val |= EFER_Flag::LME;
 	write_efer(efer_val);
 
 	enable_paging__common();
@@ -59,12 +59,12 @@ inline void enable_paging_level_4()
 
 inline void enable_paging_level_5()
 {
-	auto cr4_val = read_cr4();
-	cr4_val |= (1 << CR4_BIT_PAE) | (1 << CR4_BIT_LA57);
+	unsigned long cr4_val = read_cr4();
+	cr4_val |= CR4_Flag::PAE | CR4_Flag::LA57;
 	write_cr4(cr4_val);
 
-	auto efer_val = read_efer();
-	efer_val |= (1 << EFER_BIT_LME);
+	unsigned long efer_val = read_efer();
+	efer_val |= EFER_Flag::LME;
 	write_efer(efer_val);
 
 	enable_paging__common();

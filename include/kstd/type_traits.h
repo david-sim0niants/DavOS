@@ -26,6 +26,14 @@ template<typename T> struct RemoveReference 	 { typedef T Type; };
 template<typename T> struct RemoveReference<T&>  { typedef T Type; };
 template<typename T> struct RemoveReference<T&&> { typedef T Type; };
 
+template<class T> using UnderlyingType = __underlying_type(T);
+
+template<class T>
+constexpr bool is_enum()
+{
+	return __is_enum(T);
+}
+
 }
 
 #endif

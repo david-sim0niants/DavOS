@@ -6,6 +6,7 @@
 #include <x86/addressing.h>
 #include <stddef.h>
 #include <kstd/either.h>
+#include <kstd/enum.h>
 
 
 #if CONFIG_ARCH == ARCH_x86_64
@@ -31,39 +32,39 @@
 
 namespace x86 {
 
-enum PageEntryFlags {
-	PAGE_ENTRY_NONE = 0x0,
-	PAGE_ENTRY_WRITE_ALLOWED = 0x1,
-	PAGE_ENTRY_SUPERVISOR = PAGE_ENTRY_WRITE_ALLOWED << 1,
-	PAGE_ENTRY_GLOBAL = PAGE_ENTRY_SUPERVISOR << 1,
-	PAGE_ENTRY_EXECUTE_DISABLED = PAGE_ENTRY_GLOBAL << 1,
+enum class PageEntryFlags {
+	None = 0x0,
+	WriteAllowed = 0x1,
+	Supervisor = WriteAllowed << 1,
+	Global = Supervisor << 1,
+	ExecuteDisabled = Global << 1,
 };
-
+KSTD_DEFINE_ENUM_LOGIC_BITWISE_OPERATORS(PageEntryFlags);
 
 template<int pml> inline unsigned get_pte_idx(LineAddr linaddr)
 {
-	static_assert(pml >= 0 && pml <= MAX_PAGE_MAP_LEVEL,
+	static_assert(pml >= 0 && pml <= max_page_map_level,
 		"Invalid page map level.");
 
-	constexpr auto BEG_BIT_LOC = []() constexpr
+	constexpr auto beg_bit_loc = []() constexpr
 	{
 		if constexpr (pml == 0)
 			return 0;
 		else
-			return PageTableEntry_<pml>::CONTROLLED_BITS;
+			return PageTableEntry_<pml>::controlled_bits;
 	}();
-	constexpr auto BEG_BIT = LineAddr(1) << BEG_BIT_LOC;
+	constexpr auto beg_bit = LineAddr(1) << beg_bit_loc;
 
-	constexpr auto END_BIT = []() constexpr -> LineAddr
+	constexpr auto end_bit = []() constexpr -> LineAddr
 	{
-		if constexpr (pml == MAX_PAGE_MAP_LEVEL)
+		if constexpr (pml == max_page_map_level)
 			return 0;
 		else
 			return LineAddr(1)
-				<< PageTableEntry_<pml + 1>::CONTROLLED_BITS;
+				<< PageTableEntry_<pml + 1>::controlled_bits;
 	}();
 
-	return ((END_BIT - BEG_BIT) & linaddr) >> BEG_BIT_LOC;
+	return ((end_bit - beg_bit) & linaddr) >> beg_bit_loc;
 }
 
 enum class PageSize {
@@ -79,7 +80,7 @@ enum class PageSize {
 #endif
 };
 
-static constexpr PageSize PAGE_SIZES[] = {
+constexpr PageSize page_sizes[] = {
 	PageSize::_4Kb,
 #if CONFIG_x86_PAGE_MAP_LEVEL >= x86_PAGE_MAP_LEVEL_3_PAE
 	PageSize::_2Mb,
@@ -92,10 +93,9 @@ static constexpr PageSize PAGE_SIZES[] = {
 #endif
 };
 
-static constexpr auto NUM_PAGE_SIZES =
-		sizeof(PAGE_SIZES) / sizeof(PAGE_SIZES[0]);
+constexpr auto num_page_sizes = sizeof(page_sizes) / sizeof(page_sizes[0]);
 
-static constexpr unsigned PAGE_SIZE_SHIFTS[] = {
+constexpr unsigned page_size_shifts[] = {
 	12,
 #if CONFIG_x86_PAGE_MAP_LEVEL >= x86_PAGE_MAP_LEVEL_3_PAE
 	21,
@@ -110,7 +110,7 @@ static constexpr unsigned PAGE_SIZE_SHIFTS[] = {
 
 inline constexpr auto get_page_size_shift(PageSize page_size)
 {
-	return PAGE_SIZE_SHIFTS[(unsigned)page_size];
+	return page_size_shifts[(unsigned)page_size];
 }
 
 inline constexpr auto get_page_size_bytes(PageSize page_size)
@@ -120,9 +120,16 @@ inline constexpr auto get_page_size_bytes(PageSize page_size)
 
 
 enum class PageMapErr {
-	NONE = 0, EXISTING_PAGE_MAP, MAP_U_ON_S_AREA, MAP_W_ON_R_AREA,
-	MAP_X_ON_XD_AREA, NO_FREE_MEM, UNALIGNED_ADDRESS,
-	ADDRESS_MISMATCH, LINEADDR_OVERFLOW, PHYSADDR_OVERFLOW,
+	None = 0,
+	ExistingPageMap,
+	MapUserOnSupervisorArea,
+	MapWriteAllowedOnReadOnlyArea,
+	MapExecutableOnXDArea,
+	NoFreeMem,
+	UnalignedAddress,
+	AddressMismatch,
+	LinearAddressOverflow,
+	PhysicalAddressOverflow,
 };
 
 template<int pml>
@@ -131,52 +138,46 @@ public:
 	friend class PageTable_<pml + 1>;
 
 	PageMapErr map_memory__no_mm(LineAddr linaddr, PhysAddr phyaddr,
-			size_t mem_size, int flags,
-			uintptr_t &free_mem_beg, uintptr_t free_mem_end);
+			size_t mem_size, PageEntryFlags flags,
+			uintptr_t& free_mem_beg, uintptr_t free_mem_end);
 
 	PageMapErr map_pages__no_mm(LineAddr linaddr, PhysAddr phyaddr,
-			LinePageN nr_pages, PageSize page_size, int flags,
-			uintptr_t &free_mem_beg, uintptr_t free_mem_end);
+			LinePageN nr_pages, PageSize page_size,
+			PageEntryFlags flags,
+			uintptr_t& free_mem_beg, uintptr_t free_mem_end);
 
-	PageMapErr map_page__no_mm(LineAddr linaddr, PhysAddr phyaddr,
-			PageSize page_size, int flags,
-			uintptr_t &free_mem_beg, uintptr_t free_mem_end);
-
-	static constexpr auto NR_ENTRIES= 1 << PageTableEntry_<pml>::INDEX_BITS;
-	static constexpr auto SIZE = NR_ENTRIES * sizeof(PageTableEntry_<pml>);
-	static constexpr auto CONTROLLED_MEM_PER_ENTRY
-		= LineSize(1) << PageTableEntry_<pml>::CONTROLLED_BITS;
+	static constexpr auto nr_entries= 1 << PageTableEntry_<pml>::index_bits;
+	static constexpr auto size = nr_entries * sizeof(PageTableEntry_<pml>);
+	static constexpr auto controlled_mem_per_entry
+		= LineSize(1) << PageTableEntry_<pml>::controlled_bits;
 	static constexpr auto
-		CONTROLLED_MEM = CONTROLLED_MEM_PER_ENTRY * NR_ENTRIES;
+		controlled_mem = controlled_mem_per_entry * nr_entries;
 
 private:
 	PageMapErr map_pages__no_mm_no_chk(LineAddr linaddr, PhysAddr phyaddr,
-			LinePageN nr_pages, PageSize page_size, int flags,
-			uintptr_t &free_mem_beg, uintptr_t free_mem_end);
+			LinePageN nr_pages, PageSize page_size,
+			PageEntryFlags flags,
+			uintptr_t& free_mem_beg, uintptr_t free_mem_end);
 
 	template<PageSize page_size>
 	PageMapErr map_pages__no_mm_const_ps(LineAddr linaddr, PhysAddr phyaddr,
-			LinePageN nr_pages, int flags,
-			uintptr_t &free_mem_beg, uintptr_t free_mem_end);
-
-	template<PageSize page_size>
-	PageMapErr map_page__no_mm_const_ps(LineAddr linaddr, PhysAddr phyaddr,
-		int flags, uintptr_t &free_mem_beg, uintptr_t free_mem_end);
+			LinePageN nr_pages, PageEntryFlags flags,
+			uintptr_t& free_mem_beg, uintptr_t free_mem_end);
 
 	static PageMapErr check_overflow(LineAddr linaddr, PhysAddr phyaddr,
 			size_t mem_size);
 
 	static
 	kstd::Either<PageTable_<pml - 1> *, PageMapErr> get_or_map_page_table(
-		PageTableEntry_<pml> &entry,
-		uintptr_t &free_mem_beg, uintptr_t free_mem_end);
+			PageTableEntry_<pml>& entry,
+			uintptr_t& free_mem_beg, uintptr_t free_mem_end);
 
 public:
-	PageTableEntry_<pml> entries[NR_ENTRIES] = {};
+	PageTableEntry_<pml> entries[nr_entries] = {};
 };
 
-using PageTable = PageTable_<MAX_PAGE_MAP_LEVEL>;
-using PageTableEntry = PageTableEntry_<MAX_PAGE_MAP_LEVEL>;
+using PageTable = PageTable_<max_page_map_level>;
+using PageTableEntry = PageTableEntry_<max_page_map_level>;
 
 }
 

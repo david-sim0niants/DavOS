@@ -16,7 +16,7 @@
 namespace x86 {
 
 enum LocalErr {
-	NONE = 0, KERNEL_MAP_FAIL, PRE_KERNEL_IDENTITY_MAP_FAIL,
+	None = 0, KernelMapFail, PreKernelIdentityMapFail,
 };
 
 static void print_vendor_info(VGAText &vga_text, ArchInfo &arch_info);
@@ -36,12 +36,12 @@ static LocalErr map_identity_pages_preceding_kernel(uintptr_t &map_location,
 static LocalErr map_kernel_memory(const KernelMemLayout &mem_layout,
 		uintptr_t &map_location, PageTable *page_table);
 
-constexpr char RED_ON_BLACK =
-	vga_text_make_color(VGA_TEXT_COLOR_RED, VGA_TEXT_COLOR_BLACK);
-constexpr char GREEN_ON_BLACK =
-	vga_text_make_color(VGA_TEXT_COLOR_GREEN, VGA_TEXT_COLOR_BLACK);
-constexpr char WHITE_ON_BLACK =
-	vga_text_make_color(VGA_TEXT_COLOR_GREEN, VGA_TEXT_COLOR_BLACK);
+constexpr auto red_on_black =
+	vga_text_make_color(VGATextColors::Red, VGATextColors::Black);
+constexpr auto green_on_black =
+	vga_text_make_color(VGATextColors::Green, VGATextColors::Black);
+constexpr auto white_on_black =
+	vga_text_make_color(VGATextColors::White, VGATextColors::Black);
 
 #if CONFIG_ARCH == ARCH_x86_64
 extern "C" int early_init()
@@ -52,18 +52,18 @@ extern "C" int early_init()
 	ArchInfo arch_info;
 
 	if (!try_x86_cpuid_verbose(arch_info, vga_text)) {
-		vga_text.set_color(RED_ON_BLACK);
+		vga_text.set_color(red_on_black);
 		vga_text.puts("Can't boot 64bit image.\r\n");
 		return -1;
 	}
 
 	print_vendor_info(vga_text, arch_info);
 
-	if (arch_info.ext_feature_flags & EXT_FEATURE_LONG_MODE) {
-		vga_text.set_color(GREEN_ON_BLACK);
+	if (kstd::test(arch_info.ext_feature_flags,ExtFeatureFlags::LongMode)) {
+		vga_text.set_color(green_on_black);
 		vga_text.puts("Long mode available.\r\n");
 	} else {
-		vga_text.set_color(RED_ON_BLACK);
+		vga_text.set_color(red_on_black);
 		vga_text.puts(
 			"Long mode unavailable. Can't boot 64bit image.\r\n");
 		return -1;
@@ -95,25 +95,25 @@ extern "C" int early_init()
 
 	uintptr_t map_location = (uintptr_t)__ldconfig__KERNEL_IMAGE_END_LMA;
 	new ((void *)map_location) PageTable;
-	constexpr auto PAGE_SHIFT = PAGE_SIZE_SHIFTS[0];
+	constexpr auto PAGE_SHIFT = page_size_shifts[0];
 	constexpr auto PAGE_MASK = (1 << PAGE_SHIFT) - 1;
 	if (map_location & PAGE_MASK)
 		map_location = ((map_location >> PAGE_SHIFT) + 1) << PAGE_SHIFT;
 
 	PageTable *page_table = reinterpret_cast<PageTable *>(map_location);
-	map_location += PageTable::SIZE;
+	map_location += PageTable::size;
 
 	auto e = map_identity_pages_preceding_kernel(map_location, page_table);
-	if (e != LocalErr::NONE) {
-		vga_text.set_color(RED_ON_BLACK);
+	if (e != LocalErr::None) {
+		vga_text.set_color(red_on_black);
 		vga_text.puts(
 			"Failed to identity map pre kernel start memory.");
 		return -1;
 	}
 
 	e = map_kernel_memory(mem_layout, map_location, page_table);
-	if (e != LocalErr::NONE) {
-		vga_text.set_color(RED_ON_BLACK);
+	if (e != LocalErr::None) {
+		vga_text.set_color(red_on_black);
 		vga_text.puts("Failed to map kernel memory.");
 		return -1;
 	}
@@ -137,11 +137,11 @@ static bool try_x86_cpuid_verbose(ArchInfo &arch_info, VGAText &vga_text)
 	vga_text.puts("Checking CPUID.\r\n");
 
 	if (cpuid(arch_info)) {
-		vga_text.set_color(GREEN_ON_BLACK);
+		vga_text.set_color(green_on_black);
 		vga_text.puts("CPUID available.\r\n");
 		return true;
 	} else {
-		vga_text.set_color(VGA_TEXT_COLOR_RED);
+		vga_text.set_color(red_on_black);
 		vga_text.puts("CPUID unavailable.\r\n");
 		return false;
 	}
@@ -149,7 +149,7 @@ static bool try_x86_cpuid_verbose(ArchInfo &arch_info, VGAText &vga_text)
 
 static void print_vendor_info(VGAText &vga_text, ArchInfo &arch_info)
 {
-	vga_text.set_color(WHITE_ON_BLACK);
+	vga_text.set_color(white_on_black);
 
 	vga_text.puts("Processor vendor: ");
 
@@ -163,13 +163,13 @@ static LocalErr map_identity_pages_preceding_kernel(uintptr_t &map_location,
 {
 	const size_t mem_size = (uintptr_t)__ldconfig__KERNEL_TEXT_START_LMA-0;
 	auto e = page_table->map_memory__no_mm(0, 0, mem_size,
-			PAGE_ENTRY_GLOBAL | PAGE_ENTRY_SUPERVISOR
-			| PAGE_ENTRY_WRITE_ALLOWED,
+			PageEntryFlags::Global | PageEntryFlags::Supervisor
+			| PageEntryFlags::WriteAllowed,
 			map_location, map_location + 0x10000000);
-	if (e != PageMapErr::NONE)
-		return LocalErr::PRE_KERNEL_IDENTITY_MAP_FAIL;
+	if (e != PageMapErr::None)
+		return LocalErr::PreKernelIdentityMapFail;
 
-	return LocalErr::NONE;
+	return LocalErr::None;
 }
 
 static LocalErr map_kernel_memory(const KernelMemLayout &mem_layout,
@@ -181,44 +181,45 @@ static LocalErr map_kernel_memory(const KernelMemLayout &mem_layout,
 			(LineAddr)mem_layout.text.start_vma,
 			(PhysAddr)mem_layout.text.start_lma,
 			mem_layout.text.size,
-			PAGE_ENTRY_GLOBAL | PAGE_ENTRY_SUPERVISOR,
+			PageEntryFlags::Global | PageEntryFlags::Supervisor,
 			map_location, map_location + 0x10000000);
-	if (e != PageMapErr::NONE)
-		return LocalErr::KERNEL_MAP_FAIL;
+	if (e != PageMapErr::None)
+		return LocalErr::KernelMapFail;
 
 	e = page_table->map_memory__no_mm(
 			(LineAddr)mem_layout.bss.start_vma,
 			(PhysAddr)mem_layout.bss.start_lma,
 			mem_layout.bss.size,
-			PAGE_ENTRY_GLOBAL | PAGE_ENTRY_SUPERVISOR
-			| PAGE_ENTRY_WRITE_ALLOWED
-			| PAGE_ENTRY_EXECUTE_DISABLED,
+			PageEntryFlags::Global
+			| PageEntryFlags::Supervisor
+			| PageEntryFlags::WriteAllowed
+			| PageEntryFlags::ExecuteDisabled,
 			map_location, map_location + 0x10000000);
-	if (e != PageMapErr::NONE)
-		return LocalErr::KERNEL_MAP_FAIL;
+	if (e != PageMapErr::None)
+		return LocalErr::KernelMapFail;
 
 	e = page_table->map_memory__no_mm(
 			(LineAddr)mem_layout.rodata.start_vma,
 			(PhysAddr)mem_layout.rodata.start_lma,
 			mem_layout.rodata.size,
-			PAGE_ENTRY_GLOBAL | PAGE_ENTRY_SUPERVISOR
-			| PAGE_ENTRY_EXECUTE_DISABLED,
+			PageEntryFlags::Global | PageEntryFlags::Supervisor
+			| PageEntryFlags::ExecuteDisabled,
 			map_location, map_location + 0x10000000);
-	if (e != PageMapErr::NONE)
-		return LocalErr::KERNEL_MAP_FAIL;
+	if (e != PageMapErr::None)
+		return LocalErr::KernelMapFail;
 
 	e = page_table->map_memory__no_mm(
 			(LineAddr)mem_layout.data.start_vma,
 			(PhysAddr)mem_layout.data.start_lma,
 			mem_layout.data.size,
-			PAGE_ENTRY_GLOBAL | PAGE_ENTRY_SUPERVISOR
-			| PAGE_ENTRY_WRITE_ALLOWED
-			| PAGE_ENTRY_EXECUTE_DISABLED,
+			PageEntryFlags::Global | PageEntryFlags::Supervisor
+			| PageEntryFlags::WriteAllowed
+			| PageEntryFlags::ExecuteDisabled,
 			map_location, map_location + 0x10000000);
-	if (e != PageMapErr::NONE)
-		return LocalErr::KERNEL_MAP_FAIL;
+	if (e != PageMapErr::None)
+		return LocalErr::KernelMapFail;
 
-	return LocalErr::NONE;
+	return LocalErr::None;
 }
 
 } // x86
