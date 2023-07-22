@@ -16,8 +16,8 @@ do
 	read -r section_label_name section_flags <<< "$section"
 
 	section_name=.$section_label_name
-	new_section_name=$section_name.i386
-	new_section_label_name=${section_label_name}_i386_start
+	new_section_name=.i386$section_name
+	new_section_label_name=i386_${section_label_name}_start
 
 	# define raw binary and non-binary object filenames
 	section_bin_filename=$filename$section_name.bin
