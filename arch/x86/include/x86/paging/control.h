@@ -16,56 +16,56 @@ inline void set_curr_pt_ptr(PhysAddr pt_addr)
 
 inline void enable_paging__common()
 {
-	unsigned long cr0_val = read_cr0();
-	cr0_val |= CR0_Flag::WP | CR0_Flag::PG;
-	write_cr0(cr0_val);
+	auto cr0_val = read_cr0_flags();
+	cr0_val |= CR0_Flags::WP | CR0_Flags::PG;
+	write_cr0_flags(cr0_val);
 }
 
 inline void enable_paging_level_2()
 {
-	unsigned long cr4_val = read_cr4();
-	cr4_val &= ~CR4_Flag::PAE;
-	write_cr4(cr4_val);
+	auto cr4_val = read_cr4_flags();
+	cr4_val &= ~CR4_Flags::PAE;
+	write_cr4_flags(cr4_val);
 
 	enable_paging__common();
 }
 
 inline void enable_paging_level_3_PAE()
 {
-	unsigned long cr4_val = read_cr4();
-	cr4_val |= CR4_Flag::PAE;
-	write_cr4(cr4_val);
+	auto cr4_val = read_cr4_flags();
+	cr4_val |= CR4_Flags::PAE;
+	write_cr4_flags(cr4_val);
 
-	unsigned long efer_val = read_efer();
-	efer_val &= ~EFER_Flag::LME;
-	write_efer(efer_val);
+	auto efer_val = read_efer_flags();
+	efer_val &= ~EFER_Flags::LME;
+	write_efer_flags(efer_val);
 
 	enable_paging__common();
 }
 
 inline void enable_paging_level_4()
 {
-	unsigned long cr4_val = read_cr4();
-	cr4_val |= CR4_Flag::PAE;
-	cr4_val &= ~CR4_Flag::LA57;
-	write_cr4(cr4_val);
+	auto cr4_val = read_cr4_flags();
+	cr4_val |= CR4_Flags::PAE;
+	cr4_val &= ~CR4_Flags::LA57;
+	write_cr4_flags(cr4_val);
 
-	unsigned long efer_val = read_efer();
-	efer_val |= EFER_Flag::LME;
-	write_efer(efer_val);
+	auto efer_val = read_efer_flags();
+	efer_val |= EFER_Flags::LME;
+	write_efer_flags(efer_val);
 
 	enable_paging__common();
 }
 
 inline void enable_paging_level_5()
 {
-	unsigned long cr4_val = read_cr4();
-	cr4_val |= CR4_Flag::PAE | CR4_Flag::LA57;
-	write_cr4(cr4_val);
+	auto cr4_val = read_cr4_flags();
+	cr4_val |= CR4_Flags::PAE | CR4_Flags::LA57;
+	write_cr4_flags(cr4_val);
 
-	unsigned long efer_val = read_efer();
-	efer_val |= EFER_Flag::LME;
-	write_efer(efer_val);
+	auto efer_val = read_efer_flags();
+	efer_val |= EFER_Flags::LME;
+	write_efer_flags(efer_val);
 
 	enable_paging__common();
 }

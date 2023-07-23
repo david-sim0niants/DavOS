@@ -106,6 +106,20 @@ constexpr E switch_flag(E flag, bool on)
 	return static_cast<E>(static_cast<kstd::UnderlyingType<E>>(flag) * on);
 }
 
+template<class E>
+constexpr E to_enum(auto val)
+{
+	static_assert(is_enum<E>(), "Non-enum type.");
+	return static_cast<E>(val);
+}
+
+template<class E>
+constexpr auto to_ut(E e)
+{
+	static_assert(is_enum<E>(), "Non-enum type.");
+	return static_cast<UnderlyingType<E>>(e);
+}
+
 }
 
 #endif
