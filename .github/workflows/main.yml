@@ -30,6 +30,13 @@ jobs:
       working-directory: ${{env.BINARY_DIR}}
       run: make -j$(nproc)
 
+    - name: Create ISO Image
+      working-directory: ${{env.BINARY_DIR}}
+      run: |
+        sudo apt-get update
+        sudo apt-get install mtools
+        make kernel_iso
+
     - name: Test
       working-directory: ${{env.BINARY_DIR}}
       run: ctest -j$(nproc)
