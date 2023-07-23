@@ -4,10 +4,9 @@ project(DavOS ASM C CXX)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 20)
 
-# Set compiler flags
-set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -x assembler-with-cpp")
-set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fno-pic -fno-ident -ffreestanding -fno-exceptions -nostdlib -nostdinc -fno-stack-protector")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-pic -fno-ident -ffreestanding -fno-exceptions -fno-rtti -nostdlib -nostdinc -fno-stack-protector")
+set(DEFAULT_CMAKE_ASM_FLAGS ${CMAKE_ASM_FLAGS})
+set(DEFAULT_CMAKE_C_FLAGS ${CMAKE_C_FLAGS})
+set(DEFAULT_CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
 
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
@@ -36,17 +35,31 @@ else ()
 endif ()
 
 
-# Include include/ and generated include/ directories.
-include_directories(include)
-include_directories(${CMAKE_BINARY_DIR}/generated/include)
-
 set(IMAGE_DIR ${CMAKE_BINARY_DIR}/image)
 set(KERNEL_DIR ${IMAGE_DIR}/boot)
 set(KERNEL_PATH ${KERNEL_DIR}/kernel)
+set(ROOT_INCLUDE_DIRS
+	${CMAKE_SOURCE_DIR}/include ${CMAKE_BINARY_DIR}/generated/include)
+set(KLIBC_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/klibc/include)
+
+# Set compiler flags for kernel code
+set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -x assembler-with-cpp")
+set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fno-pic -fno-ident -ffreestanding -fno-exceptions -nostdlib -nostdinc -fno-stack-protector")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-pic -fno-ident -ffreestanding -fno-exceptions -fno-rtti -nostdlib -nostdinc -fno-stack-protector")
 
 add_subdirectory(arch)
 add_subdirectory(kernel)
 add_subdirectory(boot)
+
+option(CONFIG_HAVE_TESTS "Enabling this will configure and build tests." OFF)
+if (CONFIG_HAVE_TESTS)
+	# Reset compiler flags for user mode applications
+	set(CMAKE_ASM_FLAGS 	${DEFAULT_CMAKE_ASM_FLAGS})
+	set(CMAKE_C_FLAGS 	${DEFAULT_CMAKE_C_FLAGS})
+	set(CMAKE_CXX_FLAGS 	${DEFAULT_CMAKE_CXX_FLAGS})
+
+	add_subdirectory(test)
+endif()
 
 # Configure config.h.in file.
 set(CONFIG_ARCH_MACRO ARCH_${CONFIG_ARCH})

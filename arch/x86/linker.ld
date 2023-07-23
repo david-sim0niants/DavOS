@@ -4,21 +4,21 @@ SECTIONS
 {
 	. = 1M;
 
-	.text.i386 : ALIGN(4K)
+	.i386.text : ALIGN(4K)
 	{
-		*(.text.i386)
+		*(.i386.text)
 	}
 
-	PROVIDE(_start = ADDR(.text.i386));
+	PROVIDE(_start = ADDR(.i386.text));
 
-	.bss.i386 (NOLOAD) : ALIGN(4K)
+	.i386.bss (NOLOAD) : ALIGN(4K)
 	{
 		QUAD(0)
 	}
 
-	.rodata.i386 : ALIGN(4K)
+	.i386.rodata : ALIGN(4K)
 	{
-		*(.rodata.i386)
+		*(.i386.rodata)
 	}
 
 	.ldconfig :
@@ -59,9 +59,9 @@ SECTIONS
 		QUAD(__KERNEL_DATA_SIZE);
 	}
 
-	.data.i386 : ALIGN(4K)
+	.i386.data : ALIGN(4K)
 	{
-		*(.data.i386)
+		*(.i386.data)
 	}
 
 	PROVIDE(__STACK_SIZE = DEFINED(__STACK_SIZE) ? __STACK_SIZE : 8K);
@@ -84,6 +84,7 @@ SECTIONS
 	.text : AT(__KERNEL_TEXT_START_LMA)
 	{
 		*(.text)
+		*(.text.*)
 	}
 
 	. = ALIGN(4K);
@@ -104,6 +105,7 @@ SECTIONS
 	.rodata : AT(__KERNEL_RODATA_START_LMA)
 	{
 		*(.rodata)
+		*(.rodata.*)
 	}
 
 	. = ALIGN(4K);
@@ -114,6 +116,7 @@ SECTIONS
 	.data : AT(__KERNEL_DATA_START_LMA)
 	{
 		*(.data)
+		*(.data.*)
 	}
 
 	. = ALIGN(4K);

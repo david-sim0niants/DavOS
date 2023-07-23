@@ -1,12 +1,14 @@
 # Build objects for i386 specific image
 set(TARGET_NAME kernel_arch_i386_objs)
-set(LINKER_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/linker_i386.ld)
+set(LINKER_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/linker.ld)
 
 add_library(${TARGET_NAME} OBJECT entry.S init.cc gdt.cc
 	../vga_text.cc ../cpuid.cc ../page_map.cc)
 if (${CONFIG_ARCH} STREQUAL x86_64)
 	target_compile_options(${TARGET_NAME} PRIVATE -m32 -mno-sse)
 endif ()
+target_include_directories(${TARGET_NAME} PUBLIC
+	${ARCH_x86_INCLUDE_DIRS} ${ROOT_INCLUDE_DIRS} ${KLIBC_INCLUDE_DIR})
 
 
 # Build the i386 specific image, responsible for containing multiboot 2 header
