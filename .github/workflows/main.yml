@@ -9,19 +9,27 @@ on:
 env:
   BUILD_TYPE: Release
   SOURCE_DIR: ${{github.workspace}}
-  BINARY_DIR: ${{env.SOURCE_DIR}}/build
+  BINARY_DIR: ${{github.workspace}}/build
 
 jobs:
-  build:
+  build_test:
+    name: Build and Test
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v3
 
+    - name: Create build directory
+      run: mkdir ${{env.BINARY_DIR}}
+
     - name: Configure CMake
-      working-directory: ${{github.workspace}}/build
-      run: cmake ../ -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
-      
+      working-directory: ${{env.BINARY_DIR}}
+      run: cmake ../ -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCONFIG_HAVE_TESTS=ON
+
     - name: Build
+      working-directory: ${{env.BINARY_DIR}}
       run: make -j$(nproc)
-      
+
+    - name: Test
+      working-directory: ${{env.BINARY_DIR}}
+      run: ctest -j$(nproc)
