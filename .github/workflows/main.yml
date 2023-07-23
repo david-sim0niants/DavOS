@@ -1,0 +1,27 @@
+name: Main CI/CD
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+env:
+  BUILD_TYPE: Release
+  SOURCE_DIR: ${{github.workspace}}
+  BINARY_DIR: ${{env.SOURCE_DIR}}/build
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Configure CMake
+      working-directory: ${{github.workspace}}/build
+      run: cmake ../ -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+      
+    - name: Build
+      run: make -j$(nproc)
+      
