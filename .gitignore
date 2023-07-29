@@ -1,3 +1,4 @@
 build/
 .cache/
 .clangd
+**/__pycache__
