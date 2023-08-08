@@ -63,11 +63,11 @@ def _VM_SPLIT_check_value(value: int, config: dict):
     """
     arch = config['ARCH']
     if arch == 'i386':
-        # for i386 the VM_SPLIT must be in [1Gb, 3Gb] zone
+        # for i386 the VM_SPLIT is better be in [1Gb, 3Gb] zone
         return _VM_SPLIT_check_value_bounds_and_ps_alignment(
                 value, config, 0x40000000, 0xC0000000)
     elif arch == 'x86_64':
-        # for x86_64 the VM_SPLIT must be in [64Tb, 192Tb] zone
+        # for x86_64 the VM_SPLIT is better be in [64Tb, 192Tb] zone
         return _VM_SPLIT_check_value_bounds_and_ps_alignment(
                 value, config, 0x4000000000000000, 0xC000000000000000)
     else:
@@ -89,7 +89,7 @@ def _STACK_SIZE_check_value(value: int, config: dict):
 CONFIGS = {
     'ARCH': {
         'description': 'The target architecture the kernel will compile to.',
-        'type': 'enum',
+        'type': str,
         'value_set': {'i386', 'x86_64'},
     },
     'HAVE_TESTS': {
