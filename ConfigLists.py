@@ -1,3 +1,5 @@
+import platform
+
 _4Kb, _2Mb, _4Mb, _1Gb = 0x1000, 0x100000, 0x200000, 0x40000000
 i386_PAGE_SIZES = (_4Kb, _4Mb)
 x86_64_PAGE_SIZES = (_4Kb, _2Mb, _1Gb)
@@ -16,7 +18,7 @@ def _PAGE_SIZE_check_value(value: int, config:dict):
         return False, 'Unknown ARCH is selected.'
     
     return value in page_sizes, \
-        f'Wrong page size for ${arch}, allowed page sizes are ${page_sizes}.'
+        f'Wrong page size for {arch}, allowed page sizes are {page_sizes}.'
 
 
 def _VM_SPLIT_default_value(config: dict):
@@ -91,6 +93,7 @@ CONFIGS = {
         'description': 'The target architecture the kernel will compile to.',
         'type': str,
         'value_set': {'i386', 'x86_64'},
+        'default_value': platform.uname().machine,
     },
     'HAVE_TESTS': {
         'description': 'Enabling this will configure and build the tests.',
