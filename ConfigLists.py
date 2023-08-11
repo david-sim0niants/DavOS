@@ -1,6 +1,7 @@
 import platform
+from tools.config.lib.utils import str_mem_size
 
-_4Kb, _2Mb, _4Mb, _1Gb = 0x1000, 0x100000, 0x200000, 0x40000000
+_4Kb, _2Mb, _4Mb, _1Gb = 0x1000, 0x200000, 0x400000, 0x40000000
 i386_PAGE_SIZES = (_4Kb, _4Mb)
 x86_64_PAGE_SIZES = (_4Kb, _2Mb, _1Gb)
 
@@ -18,7 +19,7 @@ def _PAGE_SIZE_check_value(value: int, config:dict):
         return False, 'Unknown ARCH is selected.'
     
     return value in page_sizes, \
-        f'Wrong page size for {arch}, allowed page sizes are {page_sizes}.'
+        f'Wrong page size for {arch}, allowed page sizes are {"".join([str_mem_size(page_size) + ", " for page_size in page_sizes])}'
 
 
 def _VM_SPLIT_default_value(config: dict):
@@ -26,9 +27,9 @@ def _VM_SPLIT_default_value(config: dict):
     Get default value of VM_SPLIT based on the current config.
     """
     arch = config['ARCH']
-    if arch == 'i386':
+    if arch in ('i386', 'ia32', 'x86_32'):
         return 0xC0000000
-    elif arch == 'x86_64':
+    elif arch in ('x86_64', 'ia32e', 'amd64'):
         return 0x8000000000000000
     else:
         return None
@@ -64,11 +65,11 @@ def _VM_SPLIT_check_value(value: int, config: dict):
     Check VM_SPLIT value based on its dependencies from config.
     """
     arch = config['ARCH']
-    if arch == 'i386':
+    if arch in ('i386', 'ia32', 'x86_32'):
         # for i386 the VM_SPLIT is better be in [1Gb, 3Gb] zone
         return _VM_SPLIT_check_value_bounds_and_ps_alignment(
                 value, config, 0x40000000, 0xC0000000)
-    elif arch == 'x86_64':
+    elif arch in ('x86_64', 'ia32e', 'amd64'):
         # for x86_64 the VM_SPLIT is better be in [64Tb, 192Tb] zone
         return _VM_SPLIT_check_value_bounds_and_ps_alignment(
                 value, config, 0x4000000000000000, 0xC000000000000000)
@@ -92,7 +93,7 @@ CONFIGS = {
     'ARCH': {
         'description': 'The target architecture the kernel will compile to.',
         'type': str,
-        'value_set': {'i386', 'x86_64'},
+        'value_set': {('i386', 'ia32', 'x86_32'), ('x86_64', 'ia32e', 'amd64')},
         'default_value': platform.uname().machine,
     },
     'HAVE_TESTS': {

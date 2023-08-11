@@ -22,7 +22,9 @@ class Config:
         for name, config_item in self.lists.items():
             if 'dependants' not in config_item:
                 self.__trace_dependencies(name)
+
         self.config = {}
+        self.__set_initial_default_values()
 
 
     def __trace_dependencies(self, config_name: str, dependency_stack=[]):
@@ -32,13 +34,24 @@ class Config:
                 raise ConfigErr(f'Config {config_name}\
                         has an unknown dependency config f{dependency_config_name}')
             if config_name == dependency_config_name or dependency_config_name in dependency_stack:
-                raise ConfigErr(f'Circular dependencies found. Dependency stack: {dependency_stack + [config_name, dependency_config_name]}.')
+                raise ConfigErr(f'Circular dependencies found. Dependency stack: \
+                        {dependency_stack + [config_name, dependency_config_name]}.')
 
             dependants:set = dependency_config_item.get('dependants', set())
             dependants.add(config_name)
             dependency_config_item['dependants'] = dependants
 
-            self.__trace_dependencies(dependency_config_name, dependency_stack=dependency_stack + [config_name])
+            self.__trace_dependencies(dependency_config_name,\
+                    dependency_stack=dependency_stack + [config_name])
+
+
+    def __set_initial_default_values(self):
+        for name, config_item in self.lists.items():
+            if 'depends' in config_item:
+                continue
+            self.config[name] = Config.__get_default_value(config_item, self.config)
+        for name, config_item in self.lists.items():
+            self.__recheck_dependants(config_item)
 
 
     @staticmethod
@@ -52,22 +65,20 @@ class Config:
         return new_value_set
 
 
-    def __check_value_set__true_if_missing(self, config_item, value):
+    def __check_value_set(self, config_item, value):
         '''
-            Check value in value set of the config item.
-            Return True if the value set is missing (not the value in it).
+            Check value in the value set of the config item.
         '''
         if 'value_set' in config_item:
             value_set = config_item['value_set']
             return value in Config.__flatten_value_set(value_set)
         else:
-            return True
+            return False
 
 
-    def __run_value_checker__true_if_missing(self, config_item, value):
+    def __run_value_checker(self, config_item, value):
         '''
             Check value via the value checker of the config item.
-            Return True if the value checker is missing.
         '''
         if 'value_checker' in config_item:
             value_checker = config_item['value_checker']
@@ -104,42 +115,54 @@ class Config:
             return default_value
 
 
-    def __recheck_dependant(self, dependant):
+    def __recheck_dependant(self, dependant, rechecked_set: set):
+        if dependant in rechecked_set:
+            return
+        rechecked_set.add(dependant)
+
         config_item = self.lists[dependant]
         value = self.config.get(dependant)
 
         if value is not None:
-            if self.__check_value_set__true_if_missing(config_item, value):
+            if 'value_set' in config_item and self.__check_value_set(config_item, value):
                 return True
-            r = self.__run_value_checker__true_if_missing(config_item, value)
-            passed, _ = r
-            if passed:
-                return True
+            if 'value_checker' in config_item:
+                passed, _ = self.__run_value_checker(config_item, value)
+                if passed:
+                    return True
 
-        if 'default_value' in config_item:
-            default_value = Config.__get_default_value(config_item, self.config)
-            self.config[dependant] = default_value
+        default_value = Config.__get_default_value(config_item, self.config)
+        self.config[dependant] = default_value
 
-        for dependant in config_item.get('dependants', []):
-            self.__recheck_dependant(dependant)
+
+    def __recheck_dependants(self, config_item: dict):
+        rechecked_set = set()
+
+        current_dependants = set(config_item.get('dependants', []))
+
+        while len(current_dependants) != 0:
+            future_dependants = set()
+            for dependant in current_dependants:
+                self.__recheck_dependant(dependant, rechecked_set=rechecked_set)
+                future_dependants = future_dependants.union(self.lists[dependant].get('dependants', []))
+            current_dependants = future_dependants
 
 
     def define_config(self, name, value):
         config_item = self.lists[name]
-        if not self.__check_value_set__true_if_missing(config_item, value):
+        if 'value_set' in config_item and not self.__check_value_set(config_item, value):
             return False, f'Value provided for the config {name} was not found in its pre-defined value set.'
 
-        r = self.__run_value_checker__true_if_missing(config_item, value)
-        passed, reason = r
-        if not passed:
-            if isinstance(reason, str):
-                return False, f'Value checker failed: {reason}'
-            else:
-                return False, 'Value checker failed.'
+        if 'value_checker' in config_item:
+            passed, reason = self.__run_value_checker(config_item, value)
+            if not passed:
+                if isinstance(reason, str):
+                    return False, f'Value checker failed: {reason}'
+                else:
+                    return False, 'Value checker failed.'
 
         self.config[name] = value
-        for dependant in config_item.get('dependants', []):
-            self.__recheck_dependant(dependant)
+        self.__recheck_dependants(config_item)
 
         return True, None
 
