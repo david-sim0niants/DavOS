@@ -2,7 +2,7 @@ B, Kb, Mb, Gb, Tb, Pb, Eb, Zb, Yb = 1, 1 << 10, 1 << 20, 1 << 30, 1 << 40, 1 << 
 
 def str_mem_size(nr_bytes):
     if nr_bytes < Kb:
-        return f'{nr_bytes}B'
+        return f'{nr_bytes // B}B'
     elif nr_bytes < Mb:
         return f'{nr_bytes // Kb}Kb'
     elif nr_bytes < Gb:

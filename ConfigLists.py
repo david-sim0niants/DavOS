@@ -1,5 +1,14 @@
 import platform
-from tools.config.lib.utils import str_mem_size
+from tools.config.utils import str_mem_size
+
+
+def _ARCH_on_value_change(config):
+    arch = config['ARCH']
+    if arch in ('i386', 'ia32', 'x86_32'):
+        config['ARCH'] = 'i386'
+    elif arch in ('x86_64', 'ia32e', 'amd64'):
+        config['ARCH'] = 'x86_64'
+
 
 _4Kb, _2Mb, _4Mb, _1Gb = 0x1000, 0x200000, 0x400000, 0x40000000
 i386_PAGE_SIZES = (_4Kb, _4Mb)
@@ -27,9 +36,9 @@ def _VM_SPLIT_default_value(config: dict):
     Get default value of VM_SPLIT based on the current config.
     """
     arch = config['ARCH']
-    if arch in ('i386', 'ia32', 'x86_32'):
+    if arch == 'i386':
         return 0xC0000000
-    elif arch in ('x86_64', 'ia32e', 'amd64'):
+    elif arch == 'x86_64':
         return 0x8000000000000000
     else:
         return None
@@ -95,6 +104,7 @@ CONFIGS = {
         'type': str,
         'value_set': {('i386', 'ia32', 'x86_32'), ('x86_64', 'ia32e', 'amd64')},
         'default_value': platform.uname().machine,
+        'on_value_change': _ARCH_on_value_change,
     },
     'HAVE_TESTS': {
         'description': 'Enabling this will configure and build the tests.',

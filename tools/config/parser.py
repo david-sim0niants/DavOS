@@ -21,4 +21,5 @@ def parse_config_line(config_line: str):
     name = _remove_config_prefix(name)
     if not _config_name_valid(name):
         raise ParseLineErr("Invalid config name: " + name)
+    return name, value
 
