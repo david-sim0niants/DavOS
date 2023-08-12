@@ -16,10 +16,10 @@ class Config:
             Note: config lists will be stored as a reference
             and will be modified. Pass a copy of it if to avoid any changes.
         '''
-        self._lists = lists
+        self.lists = lists
 
         # create a list of dependants for each config item
-        for name, config_item in self._lists.items():
+        for name, config_item in self.lists.items():
             if 'dependants' not in config_item:
                 self.__trace_dependencies(name)
 
@@ -28,8 +28,8 @@ class Config:
 
 
     def __trace_dependencies(self, config_name: str, dependency_stack=[]):
-        for dependency_config_name in self._lists[config_name].get('depends', []):
-            dependency_config_item = self._lists.get(dependency_config_name, None)
+        for dependency_config_name in self.lists[config_name].get('depends', []):
+            dependency_config_item = self.lists.get(dependency_config_name, None)
             if dependency_config_item is None:
                 raise ConfigErr(f'Config {config_name}\
                         has an unknown dependency config f{dependency_config_name}')
@@ -46,11 +46,11 @@ class Config:
 
 
     def __set_initial_default_values(self):
-        for name, config_item in self._lists.items():
+        for name, config_item in self.lists.items():
             if 'depends' in config_item:
                 continue
             self.__set_config(name, Config.__get_default_value(config_item, self.config), config_item)
-        for name, config_item in self._lists.items():
+        for name, config_item in self.lists.items():
             self.__recheck_dependants(config_item)
 
 
@@ -120,7 +120,7 @@ class Config:
             return
         rechecked_set.add(dependant)
 
-        config_item = self._lists[dependant]
+        config_item = self.lists[dependant]
         value = self.config.get(dependant)
 
         if value is not None:
@@ -144,12 +144,12 @@ class Config:
             future_dependants = set()
             for dependant in current_dependants:
                 self.__recheck_dependant(dependant, rechecked_set=rechecked_set)
-                future_dependants = future_dependants.union(self._lists[dependant].get('dependants', []))
+                future_dependants = future_dependants.union(self.lists[dependant].get('dependants', []))
             current_dependants = future_dependants
 
 
     def define_config(self, name, value):
-        config_item = self._lists[name]
+        config_item = self.lists[name]
         if 'value_set' in config_item and not self.__check_value_set(config_item, value):
             return False, f'Value provided for the config {name} was not found in its pre-defined value set.'
 
