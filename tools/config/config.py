@@ -125,11 +125,11 @@ class Config:
 
         if value is not None:
             if 'value_set' in config_item and self.__check_value_set(config_item, value):
-                return True
+                return
             if 'value_checker' in config_item:
                 passed, _ = self.__run_value_checker(config_item, value)
                 if passed:
-                    return True
+                    return
 
         default_value = Config.__get_default_value(config_item, self.config)
         self.__set_config(dependant, default_value, config_item)
@@ -149,6 +149,9 @@ class Config:
 
 
     def define_config(self, name, value):
+        if name in self.config and self.config[name] == value:
+            return True, 'same-value'
+
         config_item = self.lists[name]
         if 'value_set' in config_item and not self.__check_value_set(config_item, value):
             return False, f'Value provided for the config {name} was not found in its pre-defined value set.'

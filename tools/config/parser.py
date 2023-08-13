@@ -4,7 +4,7 @@ valid_chars = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*$')
 
 def remove_config_prefix(config_name: str):
     prefix = 'CONFIG_'
-    if config_name[:len(prefix)].capitalize() == prefix:
+    if config_name[:len(prefix)].upper() == prefix:
         return config_name[len(prefix):]
     else:
         return config_name

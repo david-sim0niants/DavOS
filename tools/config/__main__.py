@@ -4,17 +4,13 @@
 print('Let the config begin...')
 
 import argparse as ap
-import sys, os
+import sys
 from pathlib import Path
 import cmd
 
 from config import Config, ConfigErr
 from parser import parse_config_line, config_name_valid, remove_config_prefix
 from cmake import convert_config_to_cmake
-from utils import check_value_type
-
-
-sys.path.append(os.getcwd())
 
 
 def read_config_lists_at(dir, scope):
@@ -56,29 +52,6 @@ def combine_config_lists(config_lists:dict):
     return configs
 
 
-def define_config(config:Config, name:str, value):
-        passed, reason = config.define_config(name, value)
-        if passed:
-            return
-        print(f'Failed defining config {name} with value {value}: Reason: {reason}')
-
-
-def parse_config_line_and_define(config:Config, config_line):
-    ret = parse_config_line(config_line)
-    if ret is None:
-        print('Error: invalid input.', file=sys.stderr)
-        return
-    name, value = ret
-    config_item = config.lists.get(name, None)
-    if config_item is None:
-        print(f'Error: no such config - {config_item}.')
-        return
-
-    # TODO: value checks
-
-    define_config(config, name, value)
-
-
 class ConfigShell(cmd.Cmd):
     intro = 'Interactive config manager shell'
     prompt = '(config) '
@@ -89,8 +62,13 @@ class ConfigShell(cmd.Cmd):
         self.config = config
 
     def do_get(self, args):
+        '''
+            get <config>
+            Get current value of the <config>.
+        '''
         config_name_original = args.strip().split()[0]
         config_name = remove_config_prefix(config_name_original)
+
         if not config_name_valid(config_name):
             print(f'Error: invalid config name {config_name_original}', file=sys.stderr)
             return
@@ -103,17 +81,49 @@ class ConfigShell(cmd.Cmd):
         print(f'{config_name}={self.config.config[config_name]}')
 
     def do_set(self, args):
-        parse_config_line_and_define(self.config, args)
+        '''
+            set <config>=<value>
+            <config>=<value>
+            Set <config>'s <value>.
+        '''
+        self.parse_config_line_and_define(args)
 
     def do_list(self, _):
+        '''
+            list (same as 'ls')
+            List all available configs.
+        '''
         for name, config_item in self.config.lists.items():
             print(f"{name} - {config_item['description']}" + \
                     ('' if 'type' not in config_item else f" - {config_item['type'].__name__}"))
 
     def do_ls(self, _):
+        '''
+            ls (same as 'list')
+            List all available configs.
+        '''
         self.do_list(_)
 
+    def do_save(self, _):
+        '''
+            save
+            Save all currently defined configs to config.cmake file.
+        '''
+        with open('config.cmake', 'w') as f:
+            convert_config_to_cmake(self.config, f)
+            self.saved = True
+
     def do_exit(self, _):
+        '''
+            exit
+            Exit from this shell.
+        '''
+        while not self.saved:
+            ans = input('Exit without saving? [y/N] ')
+            if 'NO'.startswith(ans.strip().upper()):
+                return
+            elif 'YES'.startswith(ans.strip().upper()):
+                return True
         return True
 
     def do_eof(self, _):
@@ -127,31 +137,43 @@ class ConfigShell(cmd.Cmd):
         return f'{splits[0].lower()} {splits[1] if len(splits) == 2 else ""}'
 
 
+    def define_config(self, name:str, value):
+            passed, reason = self.config.define_config(name, value)
+            if passed:
+                if reason != 'same-value':
+                    self.saved = False
+                return
+            print(f'Failed defining config {name} with value {value}: Reason: {reason}')
+
+
+    def parse_config_line_and_define(self, config_line):
+        ret = parse_config_line(config_line)
+        if ret is None:
+            print('Error: invalid input.', file=sys.stderr)
+            return
+        name, value = ret
+        config_item = self.config.lists.get(name, None)
+        if config_item is None:
+            print(f'Error: no such config - {config_item}.')
+            return
+
+        # TODO: value checks
+
+        self.define_config(name, value)
+
+
 if __name__ == '__main__':
     arg_parser = ap.ArgumentParser()
     arg_parser.add_argument('cwd', type=str)
-    arg_parser.add_argument('filename', type=str, default=None, nargs='?')
 
     args = arg_parser.parse_args()
 
-    try:
-        file = None if args.filename is None else open(args.filename, 'r')
-    except FileNotFoundError:
-        print(f"File under location '{args.filename}' not found.", file=sys.stderr)
-        raise
-
     print("Reading ConfigLists...")
+    sys.path.append(args.cwd)
     config_lists = read_config_lists(args.cwd)
     configs = combine_config_lists(config_lists)
 
     config = Config(configs)
+    ConfigShell(config).cmdloop()
 
-    if file is not None:
-        for line in file:
-            parse_config_line_and_define(config, line)
-    else:
-        ConfigShell(config).cmdloop()
-
-    with open('config.cmake', 'w') as f:
-        convert_config_to_cmake(config.config, f)
 
