@@ -8,9 +8,26 @@ import sys
 from pathlib import Path
 import cmd
 
-from config import Config, ConfigErr
-from parser import parse_config_line, config_name_valid, remove_config_prefix
-from cmake import convert_config_to_cmake
+
+if __name__ != '__main__':
+    print('Error: this script should be run as __main__. Stopping...', file=sys.stderr)
+    exit(code=1)
+
+
+del sys.path[0]
+
+
+arg_parser = ap.ArgumentParser()
+arg_parser.add_argument('source_directory', type=str)
+
+args = arg_parser.parse_args()
+
+sys.path.append(args.source_directory)
+
+
+from tools.config.config import Config, ConfigErr
+from tools.config.parser import parse_config_line, config_name_valid, remove_config_prefix
+from tools.config.cmake import convert_config_to_cmake
 
 
 def read_config_lists_at(dir, scope):
@@ -18,9 +35,11 @@ def read_config_lists_at(dir, scope):
     with open(path) as f:
         exec(f.read(), scope)
 
+
 SCOPE_KEYS = ['CONFIGS', 'SOURCE_CONFIGS']
 
-def read_config_lists(cwd):
+
+def read_config_lists(source_dir):
     config_lists = {}
     curr_paths = ['']
 
@@ -29,7 +48,7 @@ def read_config_lists(cwd):
 
         for path in curr_paths:
             scope = {}
-            read_config_lists_at(Path(cwd).joinpath(path), scope=scope)
+            read_config_lists_at(Path(source_dir).joinpath(path), scope=scope)
 
             scope = {key: scope[key] for key in SCOPE_KEYS if key in scope}
             config_lists[path] = scope
@@ -162,18 +181,10 @@ class ConfigShell(cmd.Cmd):
         self.define_config(name, value)
 
 
-if __name__ == '__main__':
-    arg_parser = ap.ArgumentParser()
-    arg_parser.add_argument('cwd', type=str)
+print("Reading ConfigLists...")
+config_lists = read_config_lists(args.source_directory)
+configs = combine_config_lists(config_lists)
 
-    args = arg_parser.parse_args()
-
-    print("Reading ConfigLists...")
-    sys.path.append(args.cwd)
-    config_lists = read_config_lists(args.cwd)
-    configs = combine_config_lists(config_lists)
-
-    config = Config(configs)
-    ConfigShell(config).cmdloop()
-
+config = Config(configs)
+ConfigShell(config).cmdloop()
 
