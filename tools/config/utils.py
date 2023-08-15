@@ -58,35 +58,30 @@ def _try_parse_int(value:str):
         return None
 
 
-def _try_parse_mem_size(str_mem_size:str):
-    possible_unit = None
-    for unit in units.keys():
-        if str_mem_size.endswith(unit):
-            possible_unit = unit
-            break
-    if possible_unit is None:
-        return None
-    value = _try_parse_int(str_mem_size[:-len(possible_unit)].strip())
-    if value is None:
-        return None
-    return value, possible_unit
+def try_parse_value(value:str):
+    value = value.strip()
+    lowered_value = value.lower()
+    if lowered_value in ('true', 'false'):
+        return lowered_value != 'false', bool
 
-
-def check_value_type(value:str):
-    value = value.strip().lower()
-    if value in ('true', 'false'):
-        return value != 'false', bool
-
-    if value in ('none', 'null'):
+    if lowered_value in ('none', 'null'):
         return None, type(None)
 
-    mem_size = _try_parse_mem_size(value)
-    if mem_size is not None:
-        return mem_size, int
+    try:
+        mem_size = MemSize(value)
+        return mem_size, MemSize
+    except MemSizeErr:
+        pass
 
     int_val = _try_parse_int(value)
     if int_val is not None:
         return int_val, int
+
+    try:
+        res = eval(value)
+        return res, type(res)
+    except:
+        return value, str
 
 
 class MemSizeErr(Exception):
@@ -107,7 +102,7 @@ class MemSize:
             self.value = args[0]
         elif isinstance(args[0], str):
             str_mem_size = args[0].strip()
-            ret = _try_parse_mem_size(str_mem_size)
+            ret = MemSize.__try_parse_mem_size(str_mem_size)
             if ret is None:
                 raise MemSizeErr(f'Failed to parse string {args[0]} to a memory size.')
             self.value, self.unit = ret
@@ -118,6 +113,21 @@ class MemSize:
             return
         else:
             self.__get_unit_from_kwargs(**kwargs)
+
+
+    @staticmethod
+    def __try_parse_mem_size(str_mem_size:str):
+        possible_unit = None
+        for unit in units.keys():
+            if str_mem_size.endswith(unit):
+                possible_unit = unit
+                break
+        if possible_unit is None:
+            return None
+        value = _try_parse_int(str_mem_size[:-len(possible_unit)].strip())
+        if value is None:
+            return None
+        return value, possible_unit
 
 
     def __get_unit_from_kwargs(self, **kwargs):

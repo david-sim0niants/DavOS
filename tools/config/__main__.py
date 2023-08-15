@@ -9,8 +9,11 @@ from pathlib import Path
 import cmd
 
 
+def p_err(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
+
 if __name__ != '__main__':
-    print('Error: this script should be run as __main__. Stopping...', file=sys.stderr)
+    p_err('Error: this script should be run as __main__. Stopping...')
     exit(code=1)
 
 
@@ -28,6 +31,7 @@ sys.path.append(args.source_directory)
 from tools.config.config import Config, ConfigErr
 from tools.config.parser import parse_config_line, config_name_valid, remove_config_prefix
 from tools.config.cmake import convert_config_to_cmake
+from tools.config.utils import try_parse_value
 
 
 def read_config_lists_at(dir, scope):
@@ -85,17 +89,16 @@ class ConfigShell(cmd.Cmd):
             get <config>
             Get current value of the <config>.
         '''
-        config_name_original = args.strip().split()[0]
-        config_name = remove_config_prefix(config_name_original)
-
-        if not config_name_valid(config_name):
-            print(f'Error: invalid config name {config_name_original}', file=sys.stderr)
+        if args.strip() == '':
+            p_err('Error: \'get\' requires a <config> argument.')
             return
-        if config_name not in self.config.lists:
-            print(f'Error: unknown config - {config_name_original}', file=sys.stderr)
+
+        config_name_original = args.strip().split()[0]
+        config_name = self.__check_config_existence(config_name_original)
+        if config_name is None:
             return
         if config_name not in self.config.config:
-            print(f'Config f{config_name_original} is not defined yet.')
+            p_err(f'Config f{config_name_original} is not defined yet.')
             return
         print(f'{config_name}={self.config.config[config_name]}')
 
@@ -105,7 +108,7 @@ class ConfigShell(cmd.Cmd):
             <config>=<value>
             Set <config>'s <value>.
         '''
-        self.parse_config_line_and_define(args)
+        self.__parse_config_line_and_define(args)
 
     def do_list(self, _):
         '''
@@ -122,6 +125,39 @@ class ConfigShell(cmd.Cmd):
             List all available configs.
         '''
         self.do_list(_)
+
+    def do_info(self, args):
+        if args.strip() == '':
+            p_err('Error: \'info\' requires a <config> argument.')
+            return
+
+        config_name_original = args.strip().split()[0]
+        config_name = self.__check_config_existence(config_name_original)
+        if config_name is None:
+            return
+
+        print('CONFIG_' + config_name)
+        config_item = self.config.lists.get(config_name)
+        if config_item is None:
+            return
+
+        if 'type' in config_item:
+            print(f"Type: {config_item['type'].__name__}")
+
+        if 'value_set' in config_item:
+            print(f"Accepted values: {config_item['value_set']}")
+
+        if 'default_value' in config_item:
+            default_value = config_item['default_value']
+            if not callable(default_value):
+                print(f"Default value: {default_value}")
+
+        if config_name in self.config.config:
+            print(f'Current value: {self.config.config[config_name]}')
+
+        if 'description' in config_item:
+            print(config_item['description'])
+
 
     def do_save(self, _):
         '''
@@ -149,6 +185,8 @@ class ConfigShell(cmd.Cmd):
         return self.do_exit(_)
 
     def precmd(self, line):
+        if line.strip() == '':
+            return ''
         ret = parse_config_line(line)
         if ret is not None:
             return 'set ' + line
@@ -162,23 +200,41 @@ class ConfigShell(cmd.Cmd):
                 if reason != 'same-value':
                     self.saved = False
                 return
-            print(f'Failed defining config {name} with value {value}: Reason: {reason}')
+            p_err(f'Error: failed defining config {name} with value {value}: Reason: {reason}')
 
 
-    def parse_config_line_and_define(self, config_line):
+    def __parse_config_line_and_define(self, config_line):
         ret = parse_config_line(config_line)
         if ret is None:
-            print('Error: invalid input.', file=sys.stderr)
+            p_err('Error: \'set\' requires a <config>=<value> argument.')
             return
         name, value = ret
         config_item = self.config.lists.get(name, None)
         if config_item is None:
-            print(f'Error: no such config - {config_item}.')
+            p_err(f'Error: no such config - {config_item}.')
             return
 
-        # TODO: value checks
+        val_type = config_item.get('type')
+        if val_type is not str:
+            value, input_val_type = try_parse_value(value)
+            if val_type is not None and input_val_type is not val_type:
+                p_err(f'Error: type mismatch between specified type \'{val_type.__name__}\' and type of the input value \'{input_val_type.__name__}\'.')
+                return
 
         self.define_config(name, value)
+
+
+    def __check_config_existence(self, config_name):
+        config_name_original = config_name
+        config_name = remove_config_prefix(config_name_original)
+
+        if not config_name_valid(config_name):
+            p_err(f'Error: invalid config name {config_name_original}')
+            return None
+        if config_name not in self.config.lists:
+            p_err(f'Error: unknown config - {config_name_original}')
+            return None
+        return config_name
 
 
 print("Reading ConfigLists...")
