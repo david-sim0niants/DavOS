@@ -1,8 +1,10 @@
 import re
 
+# regex that checkes whether config name is valid
 valid_chars = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*$')
 
 def remove_config_prefix(config_name: str):
+    ''' Remove CONFIG_ prefix from the config name if present. '''
     prefix = 'CONFIG_'
     if config_name[:len(prefix)].upper() == prefix:
         return config_name[len(prefix):]

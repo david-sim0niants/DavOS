@@ -149,6 +149,12 @@ class Config:
 
 
     def define_config(self, name, value):
+        '''
+            Define config 'name' with value 'value'. Resolve all the dependencies with it.
+            Returns (passed:bool, reason:str) tuple where when 'passed' is True,
+            the operation is successful and the 'reason' string is more like an additional note',
+            otherwise when 'passed' is False, the 'reason' string is the reason of failure.
+        '''
         if name in self.config and self.config[name] == value:
             return True, 'same-value'
 

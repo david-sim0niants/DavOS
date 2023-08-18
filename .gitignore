@@ -2,3 +2,5 @@ build/
 .cache/
 .clangd
 **/__pycache__
+.config
+config.cmake

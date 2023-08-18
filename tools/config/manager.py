@@ -12,15 +12,17 @@ class ConfigManagerErr(Exception):
 
 
 def _read_config_lists_at(dir, scope):
+    ''' Read config lists at specified 'dir' directory. Fill the contents in 'scope'.'''
     path = Path(dir).joinpath('ConfigLists.py')
     with open(path) as f:
         exec(f.read(), scope)
 
-
+# variables to search for in ConfigLists.py
 SCOPE_KEYS = ['CONFIGS', 'SOURCE_CONFIGS']
 
 
 def _read_config_lists(source_dir):
+    ''' Read all config lists starting from 'source_dir' directory. '''
     config_lists = {}
     curr_paths = ['']
 
@@ -43,6 +45,7 @@ def _read_config_lists(source_dir):
 
 
 def _combine_config_lists(config_lists:dict):
+    ''' Combine 'CONFIGS' dict from all 'CONFIGS' variables collected from all ConfigLists.py files. '''
     configs = {}
     for path, scope in config_lists.items():
         for name, config_item in scope.get('CONFIGS', {}).items():
@@ -53,6 +56,7 @@ def _combine_config_lists(config_lists:dict):
 
 
 def _strip_comment(line:str):
+    ''' Strip comments from line. Comments start with '# ' (note the space after '#'). '''
     comment_start = line.find(' #')
     if comment_start == -1:
         return line
@@ -61,14 +65,22 @@ def _strip_comment(line:str):
 
 
 class ConfigManager:
+    '''
+        Main class used by the interactive config shell to manage configuration, store/load/generate it.
+    '''
     def __init__(self):
         pass
 
     def read_config_lists(self, source_dir):
+        ''' Read config lists starting from 'source_dir'. '''
         config_lists = _combine_config_lists(_read_config_lists(source_dir))
         self.config = Config(config_lists)
 
     def define_config_str(self, name:str, str_value:str):
+        '''
+            Define config 'name', assuming 'name' and 'str_value' have been successfully parsed from config line.
+            'str_value' will be turned into an actual value with known type.
+        '''
         config_item = self.config.lists.get(name, None)
         if config_item is None:
             return False, f'Error: no such config - {config_item}.'
@@ -90,9 +102,15 @@ class ConfigManager:
         return self.config.lists
 
     def load_config_file(self, file):
+        ''' Load configuration file. '''
         for line_num, line in enumerate(file):
+            if line.endswith('\n'):
+                line = line[:-1]
+            if line.endswith('\r'):
+                line = line[:-1]
+
             orig_line = line
-            line = _strip_comment(line)
+            line = _strip_comment(line.strip())
             if line.strip() == '':
                 continue
             ret = parse_config_line(line)
@@ -101,11 +119,17 @@ class ConfigManager:
                 continue
 
             name, value = ret
-            self.define_config_str(name, value)
+            passed, reason = self.define_config_str(name, value)
+            if passed:
+                continue
+            print(f'Error: failed to define a config {name} with value {value}: Reason: {reason}')
+
 
     def save_config_file(self, file):
+        ''' Save configuration file. '''
         for name, value in self.config.config.items():
             file.write(f'{name}={value}\n')
 
     def gen_cmake_config_file(self, file):
+        ''' Generate cmake config. '''
         convert_config_to_cmake(self.config, file)

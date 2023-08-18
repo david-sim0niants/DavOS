@@ -59,6 +59,9 @@ def _try_parse_int(value:str):
 
 
 def try_parse_value(value:str):
+    '''
+        Try to parse a value from string, checking whether it's a string, boolean, number, memory size value, none value or a code to be evaluated.
+    '''
     value = value.strip()
     lowered_value = value.lower()
     if lowered_value in ('true', 'false'):
@@ -88,12 +91,16 @@ class MemSizeErr(Exception):
     def __init__(self, *args):
         super().__init__(*args)
 
-
 class MemSize:
+    ''' Utility type to store memory sizes (Kb, Mb, Gb...), perform arithmetic operations on them. '''
     value = 0
     unit = 'B'
 
     def __init__(self, *args, **kwargs):
+        '''
+            MemSize can be initialized either by default with 0B value, or from a string like MemSize('4Kb'), MemSize('2MB'),
+            or from only a value like MemSize(10) with default unit to 'B' (bytes) or by manually specifying both the value and the unit - MemSize(1, 'Gb').
+        '''
         if len(args) == 0:
             self.__get_unit_from_kwargs(**kwargs)
             return

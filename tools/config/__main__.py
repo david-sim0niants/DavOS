@@ -1,14 +1,13 @@
 #!/usr/bin/python3
 
 
-print('Let the config begin...')
-
 import argparse as ap
 import sys
 import cmd
 
 
 def p_err(*args, **kwargs):
+    ''' Print error function. '''
     print(*args, file=sys.stderr, **kwargs)
 
 if __name__ != '__main__':
@@ -16,7 +15,7 @@ if __name__ != '__main__':
     exit(code=1)
 
 
-del sys.path[0]
+del sys.path[0] # we gotta work at the specified source directory
 
 
 arg_parser = ap.ArgumentParser()
@@ -24,11 +23,14 @@ arg_parser.add_argument('source_directory', type=str)
 
 args = arg_parser.parse_args()
 
+# working at the specified source directory, where the most root level ConfigLists.py resides
+# but of course if the specified source directory is correct
 sys.path.append(args.source_directory)
 
-CONFIG_FILE = '.config'
-CMAKE_CONFIG_FILE = 'config.cmake'
+CONFIG_FILE = '.config' # the file to save to/load from "CONFIG_NAME=CONFIG_VALUE"-like configuration
+CMAKE_CONFIG_FILE = 'config.cmake' # cmake file to store "set(CONFIG_NAME CONFIG_VALUE)"-like configuration
 
+# import main beasts
 from tools.config.format import parse_config_line, config_name_valid, remove_config_prefix
 from tools.config.manager import ConfigManager
 
@@ -150,7 +152,7 @@ class ConfigShell(cmd.Cmd):
             return ''
         ret = parse_config_line(line)
         if ret is not None:
-            return 'set ' + line
+            return 'set ' + line # commands like CONFIG_NAME=CONFIG_VALUE are interpreted as 'set CONFIG_NAME=CONFIG_VALUE'
         splits = line.split(maxsplit=1)
         return f'{splits[0].lower()} {splits[1] if len(splits) == 2 else ""}'
 
