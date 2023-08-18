@@ -12,7 +12,6 @@ def remove_config_prefix(config_name: str):
 def config_name_valid(name: str):
     return bool(valid_chars.match(name))
 
-
 def parse_config_line(config_line:str):
     splits = config_line.split('=', maxsplit=1)
     if len(splits) < 2:
@@ -22,3 +21,4 @@ def parse_config_line(config_line:str):
     if not config_name_valid(name):
         return
     return name, value
+
