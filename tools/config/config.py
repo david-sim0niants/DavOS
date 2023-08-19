@@ -115,6 +115,16 @@ class Config:
             return default_value
 
 
+    def __config_requires_new_value(self, config_item, curr_value):
+        if 'value_set' in config_item and not self.__check_value_set(config_item, curr_value):
+            return True
+        if 'value_checker' in config_item:
+            passed, _ = self.__run_value_checker(config_item, curr_value)
+            if not passed:
+                return True
+        return False
+
+
     def __recheck_dependant(self, dependant, rechecked_set: set):
         if dependant in rechecked_set:
             return
@@ -123,13 +133,8 @@ class Config:
         config_item = self.lists[dependant]
         value = self.config.get(dependant)
 
-        if value is not None:
-            if 'value_set' in config_item and self.__check_value_set(config_item, value):
-                return
-            if 'value_checker' in config_item:
-                passed, _ = self.__run_value_checker(config_item, value)
-                if passed:
-                    return
+        if value is not None and not self.__config_requires_new_value(config_item, value):
+            return
 
         default_value = Config.__get_default_value(config_item, self.config)
         self.__set_config(dependant, default_value, config_item)
