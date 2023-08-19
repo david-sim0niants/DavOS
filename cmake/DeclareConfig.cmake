@@ -1,3 +1,5 @@
-function(decl_config NAME DEFAULT_VALUE DESCRIPTION)
-	set(${NAME} ${DEFAULT_VALUE} CACHE STRING ${DESCRIPTION})
-endfunction()
+macro(decl_config NAME DEFAULT_VALUE)
+	if (NOT ${NAME})
+		set(${NAME} ${DEFAULT_VALUE})
+	endif ()
+endmacro()
