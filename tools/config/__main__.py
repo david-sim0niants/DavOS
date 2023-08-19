@@ -104,6 +104,9 @@ class ConfigShell(cmd.Cmd):
         if 'type' in config_item:
             print(f"\tType: {config_item['type'].__name__}")
 
+        if 'depends' in config_item:
+            print(f"\tDepends on: {''.join(f'{config_name} ' for config_name in config_item['depends'])}")
+
         if 'value_set' in config_item:
             print(f"\tAccepted values: {config_item['value_set']}")
 
@@ -130,6 +133,7 @@ class ConfigShell(cmd.Cmd):
     def do_cmake(self, _):
         with open(CMAKE_CONFIG_FILE, 'w') as f:
             self.manager.gen_cmake_config_file(f)
+        print(f'Generated {CMAKE_CONFIG_FILE} file.')
 
     def do_exit(self, _):
         '''

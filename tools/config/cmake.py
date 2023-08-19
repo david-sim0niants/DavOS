@@ -16,4 +16,4 @@ def convert_config_to_cmake(config:Config, file):
             cmake_type = 'STRING'
 
         description = config_item.get('description', '')
-        file.writelines([f'set(CONFIG_{name} {cmake_value} CACHE {cmake_type} "{description}")\n'])
+        file.writelines([f'set(CONFIG_{name} {cmake_value})\n'])# CACHE {cmake_type} "{description}")\n'])

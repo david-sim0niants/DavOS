@@ -10,6 +10,26 @@ def _ARCH_on_value_change(config:dict):
         config['ARCH'] = 'x86_64'
 
 
+def _ARCH_BITNESS_default_value(config:dict):
+    arch = config['ARCH']
+    if arch == 'x86_64':
+        return 64
+    elif arch == 'i386':
+        return 32
+    else:
+        return None
+
+
+def _ARCH_BITNESS_check_value(bitness:int, config:dict):
+    arch = config['ARCH']
+    if arch == 'i386' and bitness == 32:
+        return True, None
+    elif arch == 'x86_64' and bitness == 64:
+        return True, None
+    else:
+        return False, f'Wrong bitness ({bitness}) selected for architecture {arch}'
+
+
 _4Kb, _2Mb, _4Mb, _1Gb = MemSize('4Kb'), MemSize('2Mb'), MemSize('4Mb'), MemSize('1Gb') # 0x1000, 0x200000, 0x400000, 0x40000000
 i386_PAGE_SIZES = (_4Kb, _4Mb)
 x86_64_PAGE_SIZES = (_4Kb, _2Mb, _1Gb)
@@ -26,8 +46,9 @@ def _PAGE_SIZE_check_value(page_size:int, config:dict):
         page_sizes = x86_64_PAGE_SIZES
     else:
         return False, 'Unknown ARCH is selected.'
-    
-    return page_size in page_sizes, \
+
+    passed = page_size in page_sizes
+    return passed, None if passed else \
         f'Wrong page size for {arch}, allowed page sizes are {"".join([str(page_size) + ", " for page_size in page_sizes])}'
 
 
@@ -105,6 +126,14 @@ CONFIGS = {
         'value_set': {('i386', 'ia32', 'x86_32'), ('x86_64', 'ia32e', 'amd64')},
         'default_value': platform.uname().machine,
         'on_value_change': _ARCH_on_value_change,
+    },
+    'ARCH_BITNESS': {
+        'description': 'Target architecture bitness.',
+        'type': int,
+        'depends': ['ARCH'],
+        'default_value': _ARCH_BITNESS_default_value,
+        'value_set': [32, 64],
+        'value_checker': _ARCH_BITNESS_check_value,
     },
     'HAVE_TESTS': {
         'description': 'Enabling this will configure and build the tests.',

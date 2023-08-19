@@ -3,15 +3,15 @@ set(ARCH_x86_INCLUDE_DIRS 	${CMAKE_CURRENT_SOURCE_DIR}/include
 
 # Declare x86-specific configs.
 if (${CONFIG_ARCH} STREQUAL x86_64)
-	decl_config(CONFIG_x86_PAGE_MAP_LEVEL "PAGE_MAP_LEVEL_4" "Page map level")
-	decl_config(CONFIG_PAGE_SIZE 0x1000 "Page size")
+	decl_config(CONFIG_x86_PAGE_MAP_LEVEL PAGE_MAP_LEVEL_4)
+	decl_config(CONFIG_PAGE_SIZE 0x1000)
 else ()
-	decl_config(CONFIG_x86_PAGE_MAP_LEVEL "PAGE_MAP_LEVEL_2 | PAGE_MAP_LEVEL_3_PAE" "Page map level")
-	decl_config(CONFIG_PAGE_SIZE 0x1000 "Page size")
+	decl_config(CONFIG_x86_PAGE_MAP_LEVEL PAGE_MAP_LEVEL_2)
+	decl_config(CONFIG_PAGE_SIZE 0x1000)
 endif ()
 set(CONFIG_x86_PAGE_MAP_LEVEL "x86_${CONFIG_x86_PAGE_MAP_LEVEL}")
 
-option(CONFIG_x86_PHYS_ADDR_64BIT "Is physical address size large enough (above 32 bits) to require a 64bit integer to hold its value." ON)
+decl_config(CONFIG_x86_PHYS_ADDR_64BIT ON)
 
 if (CONFIG_x86_PHYS_ADDR_64BIT)
 	set(CONFIG_x86_PHYS_ADDR_64BIT 1)
