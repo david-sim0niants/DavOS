@@ -92,31 +92,28 @@ namespace kstd {
 template<typename T>
 concept Enum = kstd::is_enum<T>();
 
-template<Enum E> bool test(E main_flags, E test_flags)
+template<Enum E> bool test_flag(E main_flags, E test_flags)
 {
 	using UType = UnderlyingType<E>;
 	return (static_cast<UType>(main_flags) & static_cast<UType>(test_flags))
 		== static_cast<UType>(test_flags);
 }
 
-template<class E>
+template<Enum E>
 constexpr E switch_flag(E flag, bool on)
 {
-	static_assert(is_enum<E>(), "Non-enum type.");
 	return static_cast<E>(static_cast<kstd::UnderlyingType<E>>(flag) * on);
 }
 
-template<class E>
+template<Enum E>
 constexpr E to_enum(auto val)
 {
-	static_assert(is_enum<E>(), "Non-enum type.");
 	return static_cast<E>(val);
 }
 
-template<class E>
+template<Enum E>
 constexpr auto to_ut(E e)
 {
-	static_assert(is_enum<E>(), "Non-enum type.");
 	return static_cast<UnderlyingType<E>>(e);
 }
 

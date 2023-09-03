@@ -33,11 +33,6 @@ struct VGATextColors {
 	White         	= 0xf;
 };
 
-constexpr char vga_text_make_color(char fg, char bg)
-{
-	return fg | (bg << 4);
-}
-
 
 class VGAText {
 public:
@@ -55,9 +50,14 @@ public:
 private:
 	long putc__no_off_check(char c);
 
-	char curr_color =
-		vga_text_make_color(VGATextColors::White, VGATextColors::Black);
+	char curr_color = make_color(VGATextColors::White, VGATextColors::Black);
 	long curr_offset = 0;
+
+public:
+	static constexpr char make_color(char fg, char bg);
+	static long write_buffer(const char *buf_data, long buf_size,
+		long offset, char color);
+	static void clear_screen();
 };
 
 inline char VGAText::get_color() const
@@ -84,9 +84,10 @@ inline void VGAText::set_offset(long offset)
 	curr_offset = offset;
 }
 
-long vga_text_write_buffer(const char *buf_data, long buf_size,
-		long offset, char color);
-void vga_text_clear();
+constexpr char VGAText::make_color(char fg, char bg)
+{
+	return fg | (bg << 4);
+}
 
 } // namespace x86
 

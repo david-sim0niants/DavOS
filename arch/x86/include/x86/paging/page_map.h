@@ -7,6 +7,7 @@
 #include <stddef.h>
 #include <kstd/either.h>
 #include <kstd/enum.h>
+#include <kstd/memory.h>
 
 
 #if CONFIG_ARCH == ARCH_x86_64
@@ -41,7 +42,10 @@ enum class PageEntryFlags {
 };
 KSTD_DEFINE_ENUM_LOGIC_BITWISE_OPERATORS(PageEntryFlags);
 
-template<int pml> inline unsigned get_pte_idx(LineAddr linaddr)
+/* Get index of entry in a page table with given page map level
+ * that controls the memory region the linaddr_beg belongs to.
+ * If pml == 0 is given, just return the offset of linaddr_beg within its page. */
+template<int pml> inline unsigned get_pte_idx(LineAddr linaddr_beg)
 {
 	static_assert(pml >= 0 && pml <= max_page_map_level,
 		"Invalid page map level.");
@@ -60,13 +64,13 @@ template<int pml> inline unsigned get_pte_idx(LineAddr linaddr)
 		if constexpr (pml == max_page_map_level)
 			return 0;
 		else
-			return LineAddr(1)
-				<< PageTableEntry_<pml + 1>::controlled_bits;
+			return LineAddr(1) << PageTableEntry_<pml + 1>::controlled_bits;
 	}();
 
-	return ((end_bit - beg_bit) & linaddr) >> beg_bit_loc;
+	return ((end_bit - beg_bit) & linaddr_beg) >> beg_bit_loc;
 }
 
+/* Enum denoting a page size. */
 enum class PageSize {
 	_4Kb = 0,
 #if CONFIG_x86_PAGE_MAP_LEVEL >= x86_PAGE_MAP_LEVEL_3_PAE
@@ -80,6 +84,7 @@ enum class PageSize {
 #endif
 };
 
+/* Page size enums in order. */
 constexpr PageSize page_sizes[] = {
 	PageSize::_4Kb,
 #if CONFIG_x86_PAGE_MAP_LEVEL >= x86_PAGE_MAP_LEVEL_3_PAE
@@ -95,6 +100,7 @@ constexpr PageSize page_sizes[] = {
 
 constexpr auto num_page_sizes = sizeof(page_sizes) / sizeof(page_sizes[0]);
 
+/* Array of page size shifts in order. */
 constexpr unsigned page_size_shifts[] = {
 	12,
 #if CONFIG_x86_PAGE_MAP_LEVEL >= x86_PAGE_MAP_LEVEL_3_PAE
@@ -108,74 +114,105 @@ constexpr unsigned page_size_shifts[] = {
 #endif
 };
 
+/* Get page size shift from page size enum. */
 inline constexpr auto get_page_size_shift(PageSize page_size)
 {
 	return page_size_shifts[(unsigned)page_size];
 }
 
+/* Get page size in bytes from page size enum. */
 inline constexpr auto get_page_size_bytes(PageSize page_size)
 {
 	return 1 << get_page_size_shift(page_size);
 }
 
 
+/* Page mapping errors. */
 enum class PageMapErr {
-	None = 0,
-	ExistingPageMap,
-	MapUserOnSupervisorArea,
-	MapWriteAllowedOnReadOnlyArea,
-	MapExecutableOnXDArea,
-	NoFreeMem,
-	UnalignedAddress,
-	AddressMismatch,
-	LinearAddressOverflow,
-	PhysicalAddressOverflow,
+	None = 0, // No error.
+	ExistingPageMap, // A page is already mapped.
+	NoFreeMem, // No free memory left in the free memory region.
+	UnalignedAddress, // Unaligned linear or physical addresses.
+	AddressMismatch, // Linear and physical addresses don't have a common alignment to the given page size.
+	LinearAddressOverflow, // self-explanatory
+	PhysicalAddressOverflow, // self-explanatory
 };
 
+/* Struct contain how page mapping should be done. */
+struct PageMappingInfo {
+	LineAddr linaddr_beg; /* Beginning linear address. */
+	PhysAddr phyaddr_beg; /* Beginning physical address. */
+	LineAddr phyaddr_end; /* Ending physical address. */
+	PageSize page_size; /* Page size. Specify it only for functions that require it. */
+	PageEntryFlags flags; /* Page entry flags. */
+};
+
+/* Class representing a page table with given page map level
+ * for low level page mapping operations. */
 template<int pml>
 class PageTable_ {
 public:
 	friend class PageTable_<pml + 1>;
 
-	PageMapErr map_memory__no_mm(LineAddr linaddr, PhysAddr phyaddr,
-			size_t mem_size, PageEntryFlags flags,
-			uintptr_t& free_mem_beg, uintptr_t free_mem_end);
+	/* Map linear address memory
+	 * [info.linaddr_beg; info.linaddr_beg + (info.phyaddr_end - info.phyaddr_beg)) to
+	 * physical address memory   [info.phyaddr_beg, info.phyaddr_end)
+	 * given the free physical memory [free_mem.beg, free_mem.end)
+	 * where page tables can be stored.
+	 * Mapped pages may have different sizes if necessary.
+	 * In case of any error, especially PageMapErr::NoFreeMem, the info struct
+	 * will be updated to contain the linear and physical addresses at which
+	 * mapping failed and the free_mem will contain the rest of the free memory
+	 * used for mapping. */
+	PageMapErr map_memory(PageMappingInfo& info, kstd::MemoryRange& free_mem);
 
-	PageMapErr map_pages__no_mm(LineAddr linaddr, PhysAddr phyaddr,
-			LinePageN nr_pages, PageSize page_size,
-			PageEntryFlags flags,
-			uintptr_t& free_mem_beg, uintptr_t free_mem_end);
+	/* Map pages the size of page_size of linear address memory
+	 * [info.linaddr_beg; info.linaddr_beg + (info.phyaddr_end - info.phyaddr_beg)) to
+	 * physical address memory   [info.phyaddr_beg, info.phyaddr_end)
+	 * given the free physical memory [free_mem.beg, free_mem.end)
+	 * where page tables can be stored.
+	 * Mapped pages may have different sizes if necessary.
+	 * In case of any error, especially PageMapErr::NoFreeMem, the info struct
+	 * will be updated to contain the linear and physical addresses at which
+	 * mapping failed and the free_mem will contain the rest of the free memory
+	 * used for mapping. */
+	PageMapErr map_pages(PageMappingInfo& info, kstd::MemoryRange& free_mem);
 
+	/* Number of page table entries. */
 	static constexpr auto nr_entries= 1 << PageTableEntry_<pml>::index_bits;
+	/* Total size of the page table. */
 	static constexpr auto size = nr_entries * sizeof(PageTableEntry_<pml>);
+	/* Memory controlled by each page table entry. */
 	static constexpr auto controlled_mem_per_entry
 		= LineSize(1) << PageTableEntry_<pml>::controlled_bits;
-	static constexpr auto
-		controlled_mem = controlled_mem_per_entry * nr_entries;
+	/* Memory controlled by this page table. */
+	static constexpr auto controlled_mem = controlled_mem_per_entry * nr_entries;
 
 private:
-	PageMapErr map_pages__no_mm_no_chk(LineAddr linaddr, PhysAddr phyaddr,
-			LinePageN nr_pages, PageSize page_size,
-			PageEntryFlags flags,
-			uintptr_t& free_mem_beg, uintptr_t free_mem_end);
+	/* Same as map_pages__no_mm but the _no_chk suffix means it won't check
+	 * linaddr_beg and phyaddr_beg alignments and whether any overflow will happen. */
+	PageMapErr map_pages__no_chk(PageMappingInfo& info, kstd::MemoryRange& free_mem);
 
+	/* Same as map_pages__no_mm_no_chk but the page_size is compile time constant. */
 	template<PageSize page_size>
-	PageMapErr map_pages__no_mm_const_ps(LineAddr linaddr, PhysAddr phyaddr,
-			LinePageN nr_pages, PageEntryFlags flags,
-			uintptr_t& free_mem_beg, uintptr_t free_mem_end);
+	PageMapErr map_pages__const_ps(PageMappingInfo& info, kstd::MemoryRange& free_mem);
 
-	static PageMapErr check_overflow(LineAddr linaddr, PhysAddr phyaddr,
-			size_t mem_size);
+	/* Check if linear and physical addresses will overflow as during mapping. */
+	static PageMapErr check_overflow(LineAddr linaddr_beg, PhysAddr phyaddr_beg,
+			LineAddr linaddr_end);
 
-	static
-	kstd::Either<PageTable_<pml - 1> *, PageMapErr> get_or_map_page_table(
-			PageTableEntry_<pml>& entry,
-			uintptr_t& free_mem_beg, uintptr_t free_mem_end);
+	/* Get a page table that the given entry links to if it does, otherwise
+	 * create, map and get a new page table using the given free memory range. */
+	static kstd::Either<PageTable_<pml - 1> *, PageMapErr> get_or_map_page_table(
+			PageTableEntry_<pml>& entry, kstd::MemoryRange& free_mem);
 
 public:
+	/* The exact array of entries. */
+	alignas(sizeof(PageTableEntryValue) * nr_entries)
 	PageTableEntry_<pml> entries[nr_entries] = {};
 };
 
+/* Page table with highest page map level able to controll whole linear memory. */
 using PageTable = PageTable_<max_page_map_level>;
 using PageTableEntry = PageTableEntry_<max_page_map_level>;
 

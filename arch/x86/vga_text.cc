@@ -15,18 +15,8 @@ long VGAText::putc(char c)
 long VGAText::puts(const char *str)
 {
 	char c = 0;
-	while ((c = *str++) && curr_offset < vga_text_buffer_nr_chars) {
-		if (c == '\n') {
-			curr_offset += vga_text_cols;
-			continue;
-		}
-		else if (c == '\r') {
-			long row_i = curr_offset / vga_text_cols;
-			curr_offset = row_i * vga_text_cols;
-			continue;
-		}
+	while ((c = *str++) && curr_offset < vga_text_buffer_nr_chars)
 		putc__no_off_check(c);
-	}
 	return curr_offset;
 }
 
@@ -41,13 +31,21 @@ long VGAText::write_buffer(const char *buf_ptr, size_t buf_len)
 
 long VGAText::putc__no_off_check(char c)
 {
-	long byte_offset = curr_offset * 2;
-	vga_text_buffer_start[byte_offset] = c;
-	vga_text_buffer_start[byte_offset + 1] = static_cast<char>(curr_color);
-	return ++curr_offset;
+	if (c == '\n') {
+		curr_offset += vga_text_cols;
+	} else if (c == '\r') {
+		long row_i = curr_offset / vga_text_cols;
+		curr_offset = row_i * vga_text_cols;
+	} else {
+		long byte_offset = curr_offset * 2;
+		vga_text_buffer_start[byte_offset] = c;
+		vga_text_buffer_start[byte_offset + 1] = static_cast<char>(curr_color);
+		++curr_offset;
+	}
+	return curr_offset;
 }
 
-long vga_text_write_buffer(const char *buf_data, long buf_size,
+long VGAText::write_buffer(const char *buf_data, long buf_size,
 		long offset, char color)
 {
 	if (offset + buf_size > vga_text_buffer_nr_chars)
@@ -61,7 +59,7 @@ long vga_text_write_buffer(const char *buf_data, long buf_size,
 	return offset + buf_size;
 }
 
-void vga_text_clear()
+void VGAText::clear_screen()
 {
 	memset(vga_text_buffer_start, 0, vga_text_buffer_size);
 }

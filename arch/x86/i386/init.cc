@@ -29,23 +29,23 @@ struct KernelMemLayout {
 	KernelSection text, bss, rodata, data;
 };
 
-static LocalErr map_identity_pages_preceding_kernel(uintptr_t &map_location,
+static LocalErr map_identity_pages_preceding_kernel(kstd::Byte *&map_location,
 		PageTable *page_table);
 
 static LocalErr map_kernel_memory(const KernelMemLayout &mem_layout,
-		uintptr_t &map_location, PageTable *page_table);
+		kstd::Byte *&map_location, PageTable *page_table);
 
 constexpr auto red_on_black =
-	vga_text_make_color(VGATextColors::Red, VGATextColors::Black);
+	VGAText::make_color(VGATextColors::Red, VGATextColors::Black);
 constexpr auto green_on_black =
-	vga_text_make_color(VGATextColors::Green, VGATextColors::Black);
+	VGAText::make_color(VGATextColors::Green, VGATextColors::Black);
 constexpr auto white_on_black =
-	vga_text_make_color(VGATextColors::White, VGATextColors::Black);
+	VGAText::make_color(VGATextColors::White, VGATextColors::Black);
 
 #if CONFIG_ARCH == ARCH_x86_64
 extern "C" int early_init()
 {
-	vga_text_clear();
+	VGAText::clear_screen();
 
 	VGAText vga_text;
 	ArchInfo arch_info;
@@ -58,7 +58,7 @@ extern "C" int early_init()
 
 	print_vendor_info(vga_text, arch_info);
 
-	if (kstd::test(arch_info.ext_feature_flags,ExtFeatureFlags::LongMode)) {
+	if (kstd::test_flag(arch_info.ext_feature_flags,ExtFeatureFlags::LongMode)) {
 		vga_text.set_color(green_on_black);
 		vga_text.puts("Long mode available.\r\n");
 	} else {
@@ -92,14 +92,17 @@ extern "C" int early_init()
 		},
 	};
 
-	uintptr_t map_location = (uintptr_t)__ldconfig__KERNEL_IMAGE_END_LMA;
-	new ((void *)map_location) PageTable;
-	constexpr auto PAGE_SHIFT = page_size_shifts[0];
-	constexpr auto PAGE_MASK = (1 << PAGE_SHIFT) - 1;
-	if (map_location & PAGE_MASK)
-		map_location = ((map_location >> PAGE_SHIFT) + 1) << PAGE_SHIFT;
+	auto map_location_val = reinterpret_cast<unsigned long>(__ldconfig__KERNEL_IMAGE_END_LMA);
+	auto map_location_pn = map_location_val / PageTable::size;
+	if (map_location_pn * PageTable::size != map_location_val)
+		map_location_val = (map_location_pn + 1) * PageTable::size;
 
-	PageTable *page_table = reinterpret_cast<PageTable *>(map_location);
+	vga_text.set_color(green_on_black);
+
+	kstd::Byte *map_location = reinterpret_cast<kstd::Byte *>(map_location_val);
+
+	PageTable *page_table = new (map_location) PageTable;
+
 	map_location += PageTable::size;
 
 	auto e = map_identity_pages_preceding_kernel(map_location, page_table);
@@ -157,14 +160,21 @@ static void print_vendor_info(VGAText &vga_text, ArchInfo &arch_info)
 	vga_text.puts("\r\n");
 }
 
-static LocalErr map_identity_pages_preceding_kernel(uintptr_t &map_location,
+static LocalErr map_identity_pages_preceding_kernel(kstd::Byte *&map_location,
 		PageTable *page_table)
 {
-	const size_t mem_size = (uintptr_t)__ldconfig__KERNEL_TEXT_START_LMA-0;
-	auto e = page_table->map_memory__no_mm(0, 0, mem_size,
-			PageEntryFlags::Global | PageEntryFlags::Supervisor
+	PageMappingInfo map_info = {
+		.linaddr_beg = 0,
+		.phyaddr_beg = 0,
+		.phyaddr_end = (PhysAddr)__ldconfig__KERNEL_TEXT_START_LMA,
+		.flags  = PageEntryFlags::Global
+			| PageEntryFlags::Supervisor
 			| PageEntryFlags::WriteAllowed,
-			map_location, map_location + 0x10000000);
+	};
+
+	kstd::MemoryRange free_mem = {map_location, map_location + 0x10000000};
+
+	auto e = page_table->map_memory(map_info, free_mem);
 	if (e != PageMapErr::None)
 		return LocalErr::PreKernelIdentityMapFail;
 
@@ -172,49 +182,66 @@ static LocalErr map_identity_pages_preceding_kernel(uintptr_t &map_location,
 }
 
 static LocalErr map_kernel_memory(const KernelMemLayout &mem_layout,
-	uintptr_t &map_location, PageTable *page_table)
+	kstd::Byte *&map_location, PageTable *page_table)
 {
 	PageMapErr e;
 
-	e = page_table->map_memory__no_mm(
-			(LineAddr)mem_layout.text.start_vma,
-			(PhysAddr)mem_layout.text.start_lma,
-			mem_layout.text.size,
-			PageEntryFlags::Global | PageEntryFlags::Supervisor,
-			map_location, map_location + 0x10000000);
+	PageMappingInfo map_info = {
+		.linaddr_beg = (LineAddr)mem_layout.text.start_vma,
+		.phyaddr_beg = (PhysAddr)mem_layout.text.start_lma,
+		.phyaddr_end = (PhysAddr)(mem_layout.text.start_lma)
+				+ mem_layout.text.size,
+		.flags  = PageEntryFlags::Global
+			| PageEntryFlags::Supervisor
+	};
+
+	kstd::MemoryRange free_mem = {map_location, map_location + 0x10000000};
+
+	e = page_table->map_memory(map_info, free_mem);
 	if (e != PageMapErr::None)
 		return LocalErr::KernelMapFail;
 
-	e = page_table->map_memory__no_mm(
-			(LineAddr)mem_layout.bss.start_vma,
-			(PhysAddr)mem_layout.bss.start_lma,
-			mem_layout.bss.size,
-			PageEntryFlags::Global
+	map_info = {
+		.linaddr_beg = (LineAddr)mem_layout.bss.start_vma,
+		.phyaddr_beg = (PhysAddr)mem_layout.bss.start_lma,
+		.phyaddr_end = (PhysAddr)(mem_layout.bss.start_lma)
+				+ mem_layout.bss.size,
+		.flags  = PageEntryFlags::Global
 			| PageEntryFlags::Supervisor
 			| PageEntryFlags::WriteAllowed
 			| PageEntryFlags::ExecuteDisabled,
-			map_location, map_location + 0x10000000);
+	};
+
+	e = page_table->map_memory(map_info, free_mem);
 	if (e != PageMapErr::None)
 		return LocalErr::KernelMapFail;
 
-	e = page_table->map_memory__no_mm(
-			(LineAddr)mem_layout.rodata.start_vma,
-			(PhysAddr)mem_layout.rodata.start_lma,
-			mem_layout.rodata.size,
-			PageEntryFlags::Global | PageEntryFlags::Supervisor
+	map_info = {
+		.linaddr_beg = (LineAddr)mem_layout.rodata.start_vma,
+		.phyaddr_beg = (PhysAddr)mem_layout.rodata.start_lma,
+		.phyaddr_end = (PhysAddr)(mem_layout.rodata.start_lma)
+				+ mem_layout.rodata.size,
+		.flags  = PageEntryFlags::Global
+			| PageEntryFlags::Supervisor
 			| PageEntryFlags::ExecuteDisabled,
-			map_location, map_location + 0x10000000);
+	};
+
+	e = page_table->map_memory(map_info, free_mem);
 	if (e != PageMapErr::None)
 		return LocalErr::KernelMapFail;
 
-	e = page_table->map_memory__no_mm(
-			(LineAddr)mem_layout.data.start_vma,
-			(PhysAddr)mem_layout.data.start_lma,
-			mem_layout.data.size,
-			PageEntryFlags::Global | PageEntryFlags::Supervisor
+	map_info = {
+		.linaddr_beg = (LineAddr)mem_layout.data.start_vma,
+		.phyaddr_beg = (PhysAddr)mem_layout.data.start_lma,
+		.phyaddr_end = (PhysAddr)(mem_layout.data.start_lma)
+				+ mem_layout.data.size,
+		.flags  = PageEntryFlags::Global
+			| PageEntryFlags::Supervisor
 			| PageEntryFlags::WriteAllowed
 			| PageEntryFlags::ExecuteDisabled,
-			map_location, map_location + 0x10000000);
+	};
+
+	e = page_table->map_memory(map_info, free_mem);
 	if (e != PageMapErr::None)
 		return LocalErr::KernelMapFail;
 
