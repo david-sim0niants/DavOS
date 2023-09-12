@@ -11,7 +11,9 @@ set(DEFAULT_CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
+include(NullFile)
 include(DeclareConfig)
+
 if (EXISTS ${CMAKE_BINARY_DIR}/config.cmake)
 	include(${CMAKE_BINARY_DIR}/config.cmake)
 endif ()
@@ -51,6 +53,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-pic -fno-ident -ffreestanding -fno-
 add_subdirectory(arch)
 add_subdirectory(kernel)
 add_subdirectory(boot)
+add_subdirectory(targets)
 
 decl_config(CONFIG_HAVE_TESTS OFF)
 if (CONFIG_HAVE_TESTS)

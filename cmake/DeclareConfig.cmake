@@ -1,5 +1,5 @@
-macro(decl_config NAME DEFAULT_VALUE)
+function(decl_config NAME DEFAULT_VALUE)
 	if (NOT ${NAME})
-		set(${NAME} ${DEFAULT_VALUE})
+		set(${NAME} ${DEFAULT_VALUE} CACHE INTERNAL "" FORCE)
 	endif ()
-endmacro()
+endfunction()
