@@ -161,6 +161,11 @@ CONFIGS = {
         'default_value': _STACK_SIZE_default_value,
         'value_checker': _STACK_SIZE_check_value,
     },
+    'MULTIBOOT2': {
+        'description': 'Enabling this makes kernel multiboot2 specification comliant.',
+        'type': bool,
+        'default_value': True,
+    },
 }
 
 SOURCE_CONFIGS = ['arch']
