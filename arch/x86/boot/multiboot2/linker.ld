@@ -19,9 +19,9 @@ SECTIONS
 		*(.rodata)
 	}
 
-	.ldconfig :
+	.ldsym :
 	{
-		KEEP(*(.ldconfig))
+		KEEP(*(.ldsym))
 	}
 
 	.data : ALIGN(4K)

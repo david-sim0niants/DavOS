@@ -66,9 +66,9 @@ data_end:
 .section .text
 
 # virtual memory address of the function that starts the ready to go kernel
-.globl __ldconfig__KERNEL_TEXT_START_VMA
+.globl __ldsym__kernel_text_start_vma
 # initial stack grows below the address where kernel start function will be located
-.globl __ldconfig__STACK_TOP
+.globl __ldsym__stack_top
 
 .type early_init, @function
 .globl early_init
@@ -77,7 +77,7 @@ data_end:
 .globl _start
 _start:
 	cli
-	mov (__ldconfig__STACK_TOP), %esp # setup stack pointer
+	mov (__ldsym__stack_top), %esp # setup stack pointer
 	call get_multiboot_info # get multiboot info
 	call early_init # early CPU and kernel initialization
 	test %eax, %eax
@@ -98,11 +98,11 @@ _start:
 .Lnext:
 #if CONFIG_ARCH == ARCH_x86_64
 	.code64
-	movq __ldconfig__KERNEL_TEXT_START_VMA(%rip), %rax
+	movq __ldsym__kernel_text_start_vma(%rip), %rax
 	callq *%rax # jump onto kernel
 	.code32
 #else
-	jmp *__ldconfig__KERNEL_TEXT_START_VMA # jump onto kernel
+	jmp *__ldsym__kernel_text_start_vma # jump onto kernel
 #endif
 
 .Lstart_fail:

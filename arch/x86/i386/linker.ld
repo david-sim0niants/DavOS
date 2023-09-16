@@ -22,41 +22,41 @@ SECTIONS
 		*(.rodata.*)
 	}
 
-	.ldconfig :
+	.ldsym :
 	{
-		PROVIDE(__ldconfig__STACK_TOP = .);
+		PROVIDE(__ldsym__stack_top = .);
 		QUAD(__STACK_TOP)
-		PROVIDE(__ldconfig__KERNEL_IMAGE_END_VMA = .);
+		PROVIDE(__ldsym__kernel_image_end_vma = .);
 		QUAD(0)
-		PROVIDE(__ldconfig__KERNEL_IMAGE_END_LMA = .);
+		PROVIDE(__ldsym__kernel_image_end_lma = .);
 		QUAD(0)
 
-		PROVIDE(__ldconfig__KERNEL_TEXT_START_VMA = .);
+		PROVIDE(__ldsym__kernel_text_start_vma = .);
 		QUAD(__KERNEL_START_PLACEHOLDER);
-		PROVIDE(__ldconfig__KERNEL_TEXT_START_LMA = .);
+		PROVIDE(__ldsym__kernel_text_start_lma = .);
 		QUAD(__KERNEL_START_PLACEHOLDER);
-		PROVIDE(__ldconfig__KERNEL_TEXT_SIZE = .);
+		PROVIDE(__ldsym__kernel_text_size = .);
 		QUAD(__KERNEL_PLACEHOLDER_SIZE);
 
-		PROVIDE(__ldconfig__KERNEL_BSS_START_VMA = .);
+		PROVIDE(__ldsym__kernel_bss_start_vma = .);
 		QUAD(0);
-		PROVIDE(__ldconfig__KERNEL_BSS_START_LMA = .);
+		PROVIDE(__ldsym__kernel_bss_start_lma = .);
 		QUAD(0);
-		PROVIDE(__ldconfig__KERNEL_BSS_SIZE = .);
-		QUAD(0);
-
-		PROVIDE(__ldconfig__KERNEL_RODATA_START_VMA = .);
-		QUAD(0);
-		PROVIDE(__ldconfig__KERNEL_RODATA_START_LMA = .);
-		QUAD(0);
-		PROVIDE(__ldconfig__KERNEL_RODATA_SIZE = .);
+		PROVIDE(__ldsym__kernel_bss_size = .);
 		QUAD(0);
 
-		PROVIDE(__ldconfig__KERNEL_DATA_START_VMA = .);
+		PROVIDE(__ldsym__kernel_rodata_start_vma = .);
 		QUAD(0);
-		PROVIDE(__ldconfig__KERNEL_DATA_START_LMA = .);
+		PROVIDE(__ldsym__kernel_rodata_start_lma = .);
 		QUAD(0);
-		PROVIDE(__ldconfig__KERNEL_DATA_SIZE = .);
+		PROVIDE(__ldsym__kernel_rodata_size = .);
+		QUAD(0);
+
+		PROVIDE(__ldsym__kernel_data_start_vma = .);
+		QUAD(0);
+		PROVIDE(__ldsym__kernel_data_start_lma = .);
+		QUAD(0);
+		PROVIDE(__ldsym__kernel_data_size = .);
 		QUAD(0);
 	}
 
