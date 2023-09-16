@@ -4,7 +4,7 @@
 
 #include <config.h>
 #include <x86/config.h>
-#include <ldconfig.h>
+#include <ldsym.h>
 
 #include <x86/cpuid.h>
 #include <x86/vga_text.h>
@@ -71,28 +71,28 @@ extern "C" int early_init()
 
 	KernelMemLayout mem_layout = {
 		.text = {
-			.start_vma = __ldconfig__KERNEL_TEXT_START_VMA,
-			.start_lma = __ldconfig__KERNEL_TEXT_START_LMA,
-			.size = __ldconfig__KERNEL_TEXT_SIZE,
+			.start_vma = __ldsym__kernel_text_start_vma,
+			.start_lma = __ldsym__kernel_text_start_lma,
+			.size = __ldsym__kernel_text_size,
 		},
 		.bss = {
-			.start_vma = __ldconfig__KERNEL_BSS_START_VMA,
-			.start_lma = __ldconfig__KERNEL_BSS_START_LMA,
-			.size = __ldconfig__KERNEL_BSS_SIZE,
+			.start_vma = __ldsym__kernel_bss_start_vma,
+			.start_lma = __ldsym__kernel_bss_start_lma,
+			.size = __ldsym__kernel_bss_size,
 		},
 		.rodata = {
-			.start_vma = __ldconfig__KERNEL_RODATA_START_VMA,
-			.start_lma = __ldconfig__KERNEL_RODATA_START_LMA,
-			.size = __ldconfig__KERNEL_RODATA_SIZE,
+			.start_vma = __ldsym__kernel_rodata_start_vma,
+			.start_lma = __ldsym__kernel_rodata_start_lma,
+			.size = __ldsym__kernel_rodata_size,
 		},
 		.data = {
-			.start_vma = __ldconfig__KERNEL_DATA_START_VMA,
-			.start_lma = __ldconfig__KERNEL_DATA_START_LMA,
-			.size = __ldconfig__KERNEL_DATA_SIZE,
+			.start_vma = __ldsym__kernel_data_start_vma,
+			.start_lma = __ldsym__kernel_data_start_lma,
+			.size = __ldsym__kernel_data_size,
 		},
 	};
 
-	auto map_location_val = reinterpret_cast<unsigned long>(__ldconfig__KERNEL_IMAGE_END_LMA);
+	auto map_location_val = reinterpret_cast<unsigned long>(__ldsym__kernel_image_end_lma);
 	auto map_location_pn = map_location_val / PageTable::size;
 	if (map_location_pn * PageTable::size != map_location_val)
 		map_location_val = (map_location_pn + 1) * PageTable::size;
@@ -166,7 +166,7 @@ static LocalErr map_identity_pages_preceding_kernel(kstd::Byte *&map_location,
 	PageMappingInfo map_info = {
 		.linaddr_beg = 0,
 		.phyaddr_beg = 0,
-		.phyaddr_end = (PhysAddr)__ldconfig__KERNEL_TEXT_START_LMA,
+		.phyaddr_end = (PhysAddr)__ldsym__kernel_text_start_lma,
 		.flags  = PageEntryFlags::Global
 			| PageEntryFlags::Supervisor
 			| PageEntryFlags::WriteAllowed,
