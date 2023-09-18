@@ -1,5 +1,5 @@
-from tools.config.config import Config
-from tools.config.utils import MemSize
+from scripts.config.config import Config
+from scripts.config.utils import MemSize
 
 def convert_config_to_cmake(config:Config, file):
     for name, value in config.config.items():
