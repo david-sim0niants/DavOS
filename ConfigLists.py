@@ -1,5 +1,5 @@
 import platform
-from tools.config.utils import MemLoc, MemSize
+from scripts.config.utils import MemLoc, MemSize
 
 
 def _ARCH_on_value_change(config:dict):

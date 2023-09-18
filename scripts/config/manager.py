@@ -1,9 +1,9 @@
 from pathlib import Path
 
-from tools.config.config import Config
-from tools.config.utils import try_parse_value
-from tools.config.format import parse_config_line
-from tools.config.cmake import convert_config_to_cmake
+from scripts.config.config import Config
+from scripts.config.utils import try_parse_value
+from scripts.config.format import parse_config_line
+from scripts.config.cmake import convert_config_to_cmake
 
 
 class ConfigManagerErr(Exception):

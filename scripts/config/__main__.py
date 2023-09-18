@@ -31,8 +31,8 @@ CONFIG_FILE = '.config' # the file to save to/load from "CONFIG_NAME=CONFIG_VALU
 CMAKE_CONFIG_FILE = 'config.cmake' # cmake file to store "set(CONFIG_NAME CONFIG_VALUE)"-like configuration
 
 # import main beasts
-from tools.config.format import parse_config_line, config_name_valid, remove_config_prefix
-from tools.config.manager import ConfigManager
+from scripts.config.format import parse_config_line, config_name_valid, remove_config_prefix
+from scripts.config.manager import ConfigManager
 
 
 class ConfigShell(cmd.Cmd):
