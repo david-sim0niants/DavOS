@@ -8,7 +8,7 @@ extern "C" {
 #endif
 
 #define DECLARE_LDSYM(type, name) \
-extern type __ldsym__##name __attribute__((section(".ldsym")))
+extern type __ldsym__##name __attribute__((section(".ldsym." #name)))
 
 /* Link defined config declarations go here. */
 

@@ -1,18 +1,20 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.13)
 project(DavOS ASM C CXX)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 20)
 
-set(DEFAULT_CMAKE_ASM_FLAGS ${CMAKE_ASM_FLAGS})
-set(DEFAULT_CMAKE_C_FLAGS ${CMAKE_C_FLAGS})
-set(DEFAULT_CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+find_program(CPREPROCESSOR NAMES cpp)
+if (NOT CPREPROCESSOR)
+	message(FATAL_ERROR "C pre-processor not found.")
+endif ()
 
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
-include(NullFile)
 include(DeclareConfig)
+include(SwitchMode)
+include(NullFile)
 
 if (EXISTS ${CMAKE_BINARY_DIR}/config.cmake)
 	include(${CMAKE_BINARY_DIR}/config.cmake)
@@ -45,10 +47,7 @@ set(ROOT_INCLUDE_DIRS
 	${CMAKE_SOURCE_DIR}/include ${CMAKE_BINARY_DIR}/generated/include)
 set(KLIBC_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/klibc/include)
 
-# Set compiler flags for kernel code
-set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -x assembler-with-cpp")
-set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fno-pic -fno-ident -ffreestanding -fno-exceptions -nostdlib -nostdinc -fno-stack-protector")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-pic -fno-ident -ffreestanding -fno-exceptions -fno-rtti -nostdlib -nostdinc -fno-stack-protector")
+switch_mode(KERNEL)
 
 add_subdirectory(arch)
 add_subdirectory(kernel)
@@ -57,11 +56,7 @@ add_subdirectory(targets)
 
 decl_config(CONFIG_HAVE_TESTS OFF)
 if (CONFIG_HAVE_TESTS)
-	# Reset compiler flags for user mode applications
-	set(CMAKE_ASM_FLAGS 	${DEFAULT_CMAKE_ASM_FLAGS})
-	set(CMAKE_C_FLAGS 	${DEFAULT_CMAKE_C_FLAGS})
-	set(CMAKE_CXX_FLAGS 	${DEFAULT_CMAKE_CXX_FLAGS})
-
+	switch_mode(USER)
 	add_subdirectory(test)
 endif()
 

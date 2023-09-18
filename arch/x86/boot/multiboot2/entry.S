@@ -61,7 +61,7 @@ data_end:
 
 
 #include <config.h>
-#include "gdt.h"
+# #include "gdt.h"
 
 .section .text
 
@@ -83,18 +83,18 @@ _start:
 	test %eax, %eax
 	jnz .Lstart_fail
 
-	call setup_gdt
-.Lload_gdt:
-	lgdt (%eax)
-	mov $0x10, %ax 	# 0x10 = sizeof(GDT_Entry) * 2, where
-			# 2 == data segment selector index
-	mov %ax, %ds
-	mov %ax, %es
-	mov %ax, %fs
-	mov %ax, %gs
-	mov %ax, %ss
-	ljmp $0x8, $.Lnext 	# 0x8 == sizeof(GDT_Entry) * 1, where
-				# 1 == code segment selector index
+# 	call setup_gdt
+# .Lload_gdt:
+# 	lgdt (%eax)
+# 	mov $0x10, %ax 	# 0x10 = sizeof(GDT_Entry) * 2, where
+# 			# 2 == data segment selector index
+# 	mov %ax, %ds
+# 	mov %ax, %es
+# 	mov %ax, %fs
+# 	mov %ax, %gs
+# 	mov %ax, %ss
+# 	ljmp $0x8, $.Lnext 	# 0x8 == sizeof(GDT_Entry) * 1, where
+# 				# 1 == code segment selector index
 .Lnext:
 #if CONFIG_ARCH == ARCH_x86_64
 	.code64
