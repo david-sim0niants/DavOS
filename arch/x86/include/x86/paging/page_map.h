@@ -142,7 +142,7 @@ enum class PageMapErr {
 struct PageMappingInfo {
 	LineAddr linaddr_beg; /* Beginning linear address. */
 	PhysAddr phyaddr_beg; /* Beginning physical address. */
-	LineAddr phyaddr_end; /* Ending physical address. */
+	PhysAddr phyaddr_end; /* Ending physical address. */
 	PageSize page_size; /* Page size. Specify it only for functions that require it. */
 	PageEntryFlags flags; /* Page entry flags. */
 };
@@ -190,14 +190,14 @@ public:
 
 private:
 	/* Same as map_pages__no_mm but the _no_chk suffix means it won't check
-	 * linaddr_beg and phyaddr_beg alignments and whether any overflow will happen. */
+	 * linaddr_beg and phyaddr_beg alignments and whether any overflow might happen. */
 	PageMapErr map_pages__no_chk(PageMappingInfo& info, kstd::MemoryRange& free_mem);
 
-	/* Same as map_pages__no_mm_no_chk but the page_size is compile time constant. */
+	/* Same as map_pages__no_mm_no_chk but the page_size is a compile time constant. */
 	template<PageSize page_size>
 	PageMapErr map_pages__const_ps(PageMappingInfo& info, kstd::MemoryRange& free_mem);
 
-	/* Check if linear and physical addresses will overflow as during mapping. */
+	/* Check if linear and physical addresses will overflow during mapping. */
 	static PageMapErr check_overflow(LineAddr linaddr_beg, PhysAddr phyaddr_beg,
 			LineAddr linaddr_end);
 

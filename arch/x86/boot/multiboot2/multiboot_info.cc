@@ -1,4 +1,4 @@
-#include <x86/boot/multiboot/multiboot_info.h>
+#include <x86/boot/multiboot2/multiboot_info.h>
 
 
 namespace x86 {

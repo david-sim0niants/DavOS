@@ -44,7 +44,7 @@ template<int pml> PageMapErr PageTable_<pml>::map_memory(
 	if (e != PageMapErr::None)
 		return e;
 
-	while (info.phyaddr_end > info.phyaddr_beg) {
+	while (info.phyaddr_beg < info.phyaddr_end) {
 		// get max page size that linaddr_beg and phyaddr_beg are divisble by
 		// and which is not larger than mapping size (phyaddr_end - phyaddr_beg)
 		const auto maybe_page_size =
@@ -133,7 +133,7 @@ __FORCE_INLINE PageMapErr PageTable_<pml>::map_pages__const_ps(
 		auto initial_pte_idx = pte_idx;
 
 		// map a page for each entry
-		while (info.phyaddr_end > info.phyaddr_beg && pte_idx < nr_entries) {
+		while (info.phyaddr_beg < info.phyaddr_end && pte_idx < nr_entries) {
 			auto& entry = entries[pte_idx];
 			if (entry.is_present()) { // the entry should not have a mapping yet
 				e = PageMapErr::ExistingPageMap;

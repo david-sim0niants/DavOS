@@ -1,3 +1,9 @@
+if (CONFIG_ARCH STREQUAL x86_64)
+	set(CMAKE_C_CXX_FLAGS "${CMAKE_C_FLAGS} -mcmodel=kernel")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CMAKE_C_CXX_FLAGS}")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_C_CXX_FLAGS}")
+endif ()
+
 # Build 'cross-architecture' part of the kernel as a static library.
 set(TARGET_NAME kernel_cross)
 
