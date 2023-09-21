@@ -9,6 +9,11 @@ if (NOT CPREPROCESSOR)
 	message(FATAL_ERROR "C pre-processor not found.")
 endif ()
 
+find_program(BASH NAMES bash)
+if (NOT BASH)
+	message(FATAL_ERROR "bash not found.")
+endif ()
+
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
