@@ -1,0 +1,77 @@
+#include <ld/ldsym.h>
+#include <config.h>
+
+ENTRY(_start)
+
+SECTIONS
+{
+	. = 1M;
+
+	.text : ALIGN(4K)
+	{
+		KEEP(*(.multiboot_header))
+		*(.text)
+		*(.text.*)
+	}
+
+	.bss (NOLOAD) : ALIGN(4K)
+	{
+		*(.bss)
+	}
+
+	.rodata : ALIGN(4K)
+	{
+		*(.rodata)
+		*(.rodata.*)
+	}
+
+	.ldsym :
+	{
+		DEFINE_LDSYM(stack_top, 		__STACK_TOP)
+		DEFINE_LDSYM(kernel_image_end_vma, 	0)
+		DEFINE_LDSYM(kernel_image_end_lma, 	0)
+
+		DEFINE_LDSYM(kernel_text_start_vma, 	__KERNEL_START_PLACEHOLDER)
+		DEFINE_LDSYM(kernel_text_start_lma, 	__KERNEL_START_PLACEHOLDER)
+		DEFINE_LDSYM(kernel_text_size, 		__KERNEL_PLACEHOLDER_SIZE)
+
+		DEFINE_LDSYM(kernel_bss_start_vma, 	0)
+		DEFINE_LDSYM(kernel_bss_start_lma, 	0)
+		DEFINE_LDSYM(kernel_bss_size, 		0)
+
+		DEFINE_LDSYM(kernel_rodata_start_vma, 	0)
+		DEFINE_LDSYM(kernel_rodata_start_lma, 	0)
+		DEFINE_LDSYM(kernel_rodata_size, 	0)
+
+		DEFINE_LDSYM(kernel_data_start_vma, 	0)
+		DEFINE_LDSYM(kernel_data_start_lma, 	0)
+		DEFINE_LDSYM(kernel_data_size, 		0)
+	}
+
+	.data : ALIGN(4K)
+	{
+		*(.data)
+	}
+
+	.stack BLOCK(CONFIG_STACK_SIZE) (NOLOAD) : ALIGN(4K)
+	{
+		. += CONFIG_STACK_SIZE;
+	}
+
+	PROVIDE(__STACK_TOP = .);
+	PROVIDE(__KERNEL_START_PLACEHOLDER = .);
+
+	.kernel_start_placeholder :
+	{
+		KEEP(*(.kernel_start_placeholder))
+	}
+
+	PROVIDE(__KERNEL_PLACEHOLDER_SIZE = . - __KERNEL_START_PLACEHOLDER);
+
+	/DISCARD/ :
+	{
+		*(.note.*)
+		*(.comment)
+		*(.eh_frame)
+	}
+}
