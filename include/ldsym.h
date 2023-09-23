@@ -8,9 +8,9 @@ extern "C" {
 #endif
 
 #define DECLARE_LDSYM(type, name) \
-extern type __ldsym__##name __attribute__((section(".ldsym." #name)))
+extern type __ldsym__##name __attribute__((section(".ldsym")))
 
-/* Link defined config declarations go here. */
+/* Link defined symbol declarations go here. */
 
 DECLARE_LDSYM(size_t, stack_top);
 DECLARE_LDSYM(void *, kernel_image_end_vma);

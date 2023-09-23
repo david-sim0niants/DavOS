@@ -138,7 +138,7 @@ CONFIGS = {
     'HAVE_TESTS': {
         'description': 'Enabling this will configure and build the tests.',
         'type': bool,
-        'default_value': False,
+        'default_value': True,
     },
     'PAGE_SIZE': {
         'description': 'Page size in bytes.',
