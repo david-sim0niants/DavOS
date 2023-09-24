@@ -45,9 +45,6 @@ else ()
 endif ()
 
 
-set(IMAGE_DIR ${CMAKE_BINARY_DIR}/image)
-set(KERNEL_DIR ${IMAGE_DIR}/boot)
-set(KERNEL_PATH ${KERNEL_DIR}/kernel)
 set(ROOT_INCLUDE_DIRS
 	${CMAKE_SOURCE_DIR}/include ${CMAKE_BINARY_DIR}/generated/include)
 set(KLIBC_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/klibc/include)
