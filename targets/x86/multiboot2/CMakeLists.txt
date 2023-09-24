@@ -9,6 +9,7 @@ function(gen_linker_script_comm TARGET_NAME LINKER_SCRIPT_IN LINKER_SCRIPT)
 		COMMAND ${CPREPROCESSOR} ${LINKER_SCRIPT_IN} ${INC_DIRS} -P -o ${LINKER_SCRIPT})
 endfunction(gen_linker_script_comm)
 
+
 # .ldsym section remains writable after linking, make it readonly using objcopy.
 function(make_ldsym_readonly_comm TARGET_NAME)
 	add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
@@ -20,6 +21,7 @@ endfunction(make_ldsym_readonly_comm)
 set(DUMP_SECTIONS_SCRIPT     ${CMAKE_SOURCE_DIR}/scripts/dump_sections/main.sh)
 set(DUMPED_SECTION_FN_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/kernel_entry_i386)
 
+# Get paths to the dumped section files.
 function(get_dumped_section_files)
 	set(SECTIONS ${ARGV})
 	set(DUMPED_SECTION_FILES "")
@@ -33,6 +35,7 @@ function(get_dumped_section_files)
 endfunction(get_dumped_section_files)
 
 
+# Get paths to template and preprocessed linker scripts.
 function(get_linker_script_path NAME)
 	# Template linker script path
 	set(LINKER_SCRIPT_IN 	${CMAKE_CURRENT_SOURCE_DIR}/${NAME}.ld.in PARENT_SCOPE)

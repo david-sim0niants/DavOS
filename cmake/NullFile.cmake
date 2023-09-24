@@ -1,4 +1,5 @@
-macro(get_null_file EXTENSION)
+function(get_null_file EXTENSION)
 	set(NULL_FILE ${CMAKE_BINARY_DIR}/.null.${EXTENSION})
 	file(WRITE ${NULL_FILE} "")
-endmacro()
+	set(NULL_FILE ${NULL_FILE} PARENT_SCOPE)
+endfunction()

@@ -1,4 +1,4 @@
-# Build objects for i386 specific image
+# Build kernel entry for i386 mode.
 set(TARGET_NAME kernel_x86_i386_entry)
 
 set(SRC_FILES init.cc gdt.cc ../vga_text.cc ../cpuid.cc ../page_map.cc)
