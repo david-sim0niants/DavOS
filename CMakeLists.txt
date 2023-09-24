@@ -4,23 +4,26 @@ project(DavOS ASM C CXX)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 20)
 
+# Find the C preprocessor
 find_program(CPREPROCESSOR NAMES cpp)
 if (NOT CPREPROCESSOR)
 	message(FATAL_ERROR "C pre-processor not found.")
 endif ()
 
+# Find bash shell
 find_program(BASH NAMES bash)
 if (NOT BASH)
 	message(FATAL_ERROR "bash not found.")
 endif ()
 
-
+# Include some utilities
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 include(DeclareConfig)
 include(SwitchMode)
 include(NullFile)
 
+# Include config.cmake file containing generated configuration.
 if (EXISTS ${CMAKE_BINARY_DIR}/config.cmake)
 	include(${CMAKE_BINARY_DIR}/config.cmake)
 endif ()
@@ -44,16 +47,18 @@ else ()
 	decl_config(CONFIG_VM_SPLIT 0xC0000000)
 endif ()
 
-
-set(ROOT_INCLUDE_DIRS
-	${CMAKE_SOURCE_DIR}/include ${CMAKE_BINARY_DIR}/generated/include)
+# Setup root include directories which are the top level include and
+# generated include directories.
+set(ROOT_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/include ${CMAKE_BINARY_DIR}/generated/include)
+# Setup the kernel libc library include directory.
 set(KLIBC_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/klibc/include)
 
+# Switch to mode with CMake configuration setup for building the kernel.
 switch_mode(KERNEL)
 
 add_subdirectory(arch)
-add_subdirectory(kernel)
 add_subdirectory(boot)
+add_subdirectory(kernel)
 add_subdirectory(targets)
 
 decl_config(CONFIG_HAVE_TESTS OFF)

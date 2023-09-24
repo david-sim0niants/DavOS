@@ -1,3 +1,4 @@
+# Setup x86 include directories.
 set(x86_INCLUDE_DIRS 	${CMAKE_CURRENT_SOURCE_DIR}/include
 			${CMAKE_CURRENT_BINARY_DIR}/generated/include)
 
@@ -37,5 +38,6 @@ if (${CONFIG_ARCH} STREQUAL x86_64)
 	target_compile_options(${TARGET_NAME} PRIVATE -mcmodel=kernel)
 endif ()
 
+# Build kernel_arch library that wraps kernel_x86 library in a cross-platform API.
 set(TARGET_NAME kernel_arch)
 add_library(${TARGET_NAME} ALIAS kernel_x86)
