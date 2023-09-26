@@ -26,18 +26,10 @@ static GDT_Entry gdt[] = {
 	},
 };
 
-struct {
-	uint16_t size;
-	uint64_t addr;
-} __attribute__((packed)) gdt_ptr;
 
-extern "C" void *setup_gdt()
-{
-	gdt_ptr = {
-		.size = sizeof(gdt) - 1,
-		.addr = reinterpret_cast<unsigned long>(&gdt[0])
-	};
-	return &gdt_ptr;
-}
+GDT_Ptr gdt_ptr = {
+	sizeof(gdt) - 1,
+	reinterpret_cast<unsigned long>(&gdt[0]),
+};
 
 }

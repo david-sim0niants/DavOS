@@ -9,8 +9,11 @@
 #include <x86/cpuid.h>
 #include <x86/vga_text.h>
 #include <x86/paging.h>
+#include <x86/system.h>
 
 #include <kstd/new.h>
+
+#include "gdt.h"
 
 namespace x86 {
 
@@ -42,8 +45,11 @@ constexpr auto green_on_black =
 constexpr auto white_on_black =
 	VGAText::make_color(VGATextColors::White, VGATextColors::Black);
 
-#if CONFIG_ARCH == ARCH_x86_64
-extern "C" int early_init()
+static void setup_data_segments();
+static void far_jmp_to_main();
+
+
+extern "C" void _x86_i386_start()
 {
 	VGAText::clear_screen();
 
@@ -53,7 +59,7 @@ extern "C" int early_init()
 	if (!try_x86_cpuid_verbose(arch_info, vga_text)) {
 		vga_text.set_color(red_on_black);
 		vga_text.puts("Can't boot 64bit image.\r\n");
-		return -1;
+		halt();
 	}
 
 	print_vendor_info(vga_text, arch_info);
@@ -65,34 +71,34 @@ extern "C" int early_init()
 		vga_text.set_color(red_on_black);
 		vga_text.puts(
 			"Long mode unavailable. Can't boot 64bit image.\r\n");
-		return -1;
+		halt();
 	}
 
 
 	KernelMemLayout mem_layout = {
 		.text = {
-			.start_vma = __ldsym__kernel_text_start_vma,
-			.start_lma = __ldsym__kernel_text_start_lma,
-			.size = __ldsym__kernel_text_size,
+			.start_vma = (void *)__ldsym__kernel_text_start_vma,
+			.start_lma = (void *)__ldsym__kernel_text_start_lma,
+			.size = (size_t)__ldsym__kernel_text_size,
 		},
 		.bss = {
-			.start_vma = __ldsym__kernel_bss_start_vma,
-			.start_lma = __ldsym__kernel_bss_start_lma,
-			.size = __ldsym__kernel_bss_size,
+			.start_vma = (void *)__ldsym__kernel_bss_start_vma,
+			.start_lma = (void *)__ldsym__kernel_bss_start_lma,
+			.size = (size_t)__ldsym__kernel_bss_size,
 		},
 		.rodata = {
-			.start_vma = __ldsym__kernel_rodata_start_vma,
-			.start_lma = __ldsym__kernel_rodata_start_lma,
-			.size = __ldsym__kernel_rodata_size,
+			.start_vma = (void *)__ldsym__kernel_rodata_start_vma,
+			.start_lma = (void *)__ldsym__kernel_rodata_start_lma,
+			.size = (size_t)__ldsym__kernel_rodata_size,
 		},
 		.data = {
-			.start_vma = __ldsym__kernel_data_start_vma,
-			.start_lma = __ldsym__kernel_data_start_lma,
-			.size = __ldsym__kernel_data_size,
+			.start_vma = (void *)__ldsym__kernel_data_start_vma,
+			.start_lma = (void *)__ldsym__kernel_data_start_lma,
+			.size = (size_t)__ldsym__kernel_data_size,
 		},
 	};
 
-	auto map_location_val = reinterpret_cast<unsigned long>(__ldsym__kernel_image_end_lma);
+	auto map_location_val = (unsigned long)__ldsym__kernel_image_end_lma;
 	auto map_location_pn = map_location_val / PageTable::size;
 	if (map_location_pn * PageTable::size != map_location_val)
 		map_location_val = (map_location_pn + 1) * PageTable::size;
@@ -110,29 +116,25 @@ extern "C" int early_init()
 		vga_text.set_color(red_on_black);
 		vga_text.puts(
 			"Failed to identity map pre kernel start memory.");
-		return -1;
+		halt();
 	}
 
 	e = map_kernel_memory(mem_layout, map_location, page_table);
 	if (e != LocalErr::None) {
 		vga_text.set_color(red_on_black);
 		vga_text.puts("Failed to map kernel memory.");
-		return -1;
+		halt();
 	}
 
 	set_curr_pt_ptr((PhysAddr)page_table);
 	// TODO: check the cpuid features
 	enable_paging();
 
-	return 0;
+	load_gdt();
+	setup_data_segments();
+	far_jmp_to_main();
 }
-#else
-int early_init()
-{
-	// unimplemented
-	return -2;
-}
-#endif
+
 
 static bool try_x86_cpuid_verbose(ArchInfo &arch_info, VGAText &vga_text)
 {
@@ -246,6 +248,43 @@ static LocalErr map_kernel_memory(const KernelMemLayout &mem_layout,
 		return LocalErr::KernelMapFail;
 
 	return LocalErr::None;
+}
+
+
+static __FORCE_INLINE void setup_data_segments()
+{
+	asm volatile (
+		"mov %[ds_offset], %%ax 	\n"
+		"mov %%ax, %%ds 		\n"
+		"mov %%ax, %%es 		\n"
+		"mov %%ax, %%fs 		\n"
+		"mov %%ax, %%gs 		\n"
+		"mov %%ax, %%ss 		\n"
+		:: [ds_offset]"i"(sizeof(GDT_Entry) * 2)
+	);
+}
+
+
+static __FORCE_INLINE void far_jmp_to_main()
+{
+	uint32_t kernel_main = (uint32_t)__ldsym__kernel_main;
+
+	asm volatile (
+		"ljmp %[cs_offset], $.Lhere 	\n"
+		".Lhere: 			\n"
+		"jmp *%[main] 			\n"
+		::
+		[cs_offset]"i"(sizeof(GDT_Entry)),
+		[main]"r"(kernel_main)
+		:
+		"memory"
+	);
+	__builtin_unreachable();
+}
+
+static void __attribute__((section(".fake_main_text"))) fake_main()
+{
+	halt();
 }
 
 } // x86

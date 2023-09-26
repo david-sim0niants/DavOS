@@ -1,5 +1,5 @@
-#ifndef _x86_i386__MULTIBOOT_INFO_H__
-#define _x86_i386__MULTIBOOT_INFO_H__
+#ifndef _x86_BOOT_MULTIBOOT2__MULTIBOOT_INFO_H__
+#define _x86_BOOT_MULTIBOOT2__MULTIBOOT_INFO_H__
 
 #include <stdint.h>
 

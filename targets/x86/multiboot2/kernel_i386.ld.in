@@ -14,26 +14,21 @@ SECTIONS
 		*(.text.*)
 	}
 
-	.bss (NOLOAD) : ALIGN(4K)
-	{
-		*(.bss)
-	}
-
 	.rodata : ALIGN(4K)
 	{
 		*(.rodata)
 		*(.rodata.*)
 	}
 
-	.ldsym :
+	.ldsym : ALIGN(4K)
 	{
 		DEFINE_LDSYM(stack_top, 		__STACK_TOP)
 		DEFINE_LDSYM(kernel_image_end_vma, 	0)
 		DEFINE_LDSYM(kernel_image_end_lma, 	0)
 
-		DEFINE_LDSYM(kernel_text_start_vma, 	__KERNEL_START_PLACEHOLDER)
-		DEFINE_LDSYM(kernel_text_start_lma, 	__KERNEL_START_PLACEHOLDER)
-		DEFINE_LDSYM(kernel_text_size, 		__KERNEL_PLACEHOLDER_SIZE)
+		DEFINE_LDSYM(kernel_text_start_vma, 	__FAKE_KERNEL_MAIN)
+		DEFINE_LDSYM(kernel_text_start_lma, 	__FAKE_KERNEL_MAIN)
+		DEFINE_LDSYM(kernel_text_size, 		__FAKE_KERNEL_MAIN_TEXT_SIZE)
 
 		DEFINE_LDSYM(kernel_bss_start_vma, 	0)
 		DEFINE_LDSYM(kernel_bss_start_lma, 	0)
@@ -46,6 +41,8 @@ SECTIONS
 		DEFINE_LDSYM(kernel_data_start_vma, 	0)
 		DEFINE_LDSYM(kernel_data_start_lma, 	0)
 		DEFINE_LDSYM(kernel_data_size, 		0)
+
+		DEFINE_LDSYM(kernel_main, 		__FAKE_KERNEL_MAIN)
 	}
 
 	.data : ALIGN(4K)
@@ -59,17 +56,18 @@ SECTIONS
 	}
 
 	PROVIDE(__STACK_TOP = .);
-	PROVIDE(__KERNEL_START_PLACEHOLDER = .);
+	PROVIDE(__FAKE_KERNEL_MAIN = .);
 
-	.kernel_start_placeholder :
+	.fake_main_text :
 	{
-		KEEP(*(.kernel_start_placeholder))
+		KEEP(*(.fake_main_text))
 	}
 
-	PROVIDE(__KERNEL_PLACEHOLDER_SIZE = . - __KERNEL_START_PLACEHOLDER);
+	PROVIDE(__FAKE_KERNEL_MAIN_TEXT_SIZE = . - __FAKE_KERNEL_MAIN);
 
 	/DISCARD/ :
 	{
+		*(.bss) /* .bss won't be used in i386-specific code. */
 		*(.note.*)
 		*(.comment)
 		*(.eh_frame)

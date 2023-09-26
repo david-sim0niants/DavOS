@@ -11,5 +11,5 @@ add_library(${TARGET_NAME} STATIC main.cc)
 # Build the main, independent from its entry portion of the kernel.
 set(TARGET_NAME kernel_main)
 get_null_file(cpp)
-add_library(${TARGET_NAME} STATIC ${NULL_FILE})
-target_link_libraries(${TARGET_NAME} PRIVATE kernel_cross kernel_arch)
+add_library(${TARGET_NAME} STATIC ${NULL_FILE} $<TARGET_OBJECTS:kernel_cross> $<TARGET_OBJECTS:kernel_arch>)
+# target_link_libraries(${TARGET_NAME} PRIVATE kernel_cross kernel_arch)

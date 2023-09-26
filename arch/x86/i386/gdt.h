@@ -1,8 +1,6 @@
 #ifndef _x86_i386__GDT_H__
 #define _x86_i386__GDT_H__
 
-#ifndef __ASSEMBLER__
-
 #include <stdint.h>
 
 #include <kstd/enum.h>
@@ -21,12 +19,14 @@ enum class GDT_AccessFlags : uint8_t {
 };
 KSTD_DEFINE_ENUM_LOGIC_BITWISE_OPERATORS(GDT_AccessFlags);
 
+
 enum class GDT_Flags : uint8_t {
 	LongMode 	= 0x2,
 	SizeFlag 	= 0x4,
 	Granularity 	= 0x8,
 };
 KSTD_DEFINE_ENUM_LOGIC_BITWISE_OPERATORS(GDT_Flags);
+
 
 struct GDT_Entry {
 	uint16_t limit_low;
@@ -37,16 +37,21 @@ struct GDT_Entry {
 	uint8_t base_high;
 } __attribute__((packed));
 
+
+struct GDT_Ptr {
+	uint16_t size;
+	uint64_t addr;
+} __attribute__((packed));
+
+
+extern GDT_Ptr gdt_ptr;
+
+
+inline void load_gdt()
+{
+	asm volatile("lgdt (%[gdt_ptr])" :: [gdt_ptr]"r"(&gdt_ptr));
 }
 
-extern "C" void *setup_gdt();
-
-#else
-
-.section .text
-.type setup_gdt, @function
-.globl setup_gdt
-
-#endif
+}
 
 #endif
