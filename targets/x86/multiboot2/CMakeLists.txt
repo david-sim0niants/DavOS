@@ -22,8 +22,8 @@ set(DUMP_SECTIONS_SCRIPT     ${CMAKE_SOURCE_DIR}/scripts/dump_sections/main.sh)
 set(DUMPED_SECTION_FN_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/kernel_entry_i386)
 
 # Get paths to the dumped section files.
-function(get_dumped_section_files)
-	set(SECTIONS ${ARGV})
+function(get_dumped_section_files RESULT_VAR)
+	set(SECTIONS ${ARGN})
 	set(DUMPED_SECTION_FILES "")
 
 	foreach(SECTION ${SECTIONS})
@@ -31,16 +31,16 @@ function(get_dumped_section_files)
 		list(APPEND DUMPED_SECTION_FILES ${SECTION_FILE})
 	endforeach()
 
-	set(DUMPED_SECTION_FILES ${DUMPED_SECTION_FILES} PARENT_SCOPE)
+	set(${RESULT_VAR} ${DUMPED_SECTION_FILES} PARENT_SCOPE)
 endfunction(get_dumped_section_files)
 
 
 # Get paths to template and preprocessed linker scripts.
-function(get_linker_script_path NAME)
+function(get_linker_script_path NAME TEMPLATE_FP_VAR PREPROC_FP_VAR)
 	# Template linker script path
-	set(LINKER_SCRIPT_IN 	${CMAKE_CURRENT_SOURCE_DIR}/${NAME}.ld.in PARENT_SCOPE)
+	set(${TEMPLATE_FP_VAR} 	${CMAKE_CURRENT_SOURCE_DIR}/${NAME}.ld.in PARENT_SCOPE)
 	# Preprocessed linker script path
-	set(LINKER_SCRIPT 	${CMAKE_CURRENT_BINARY_DIR}/${NAME}.ld PARENT_SCOPE)
+	set(${PREPROC_FP_VAR} 	${CMAKE_CURRENT_BINARY_DIR}/${NAME}.ld PARENT_SCOPE)
 endfunction(get_linker_script_path)
 
 
@@ -51,7 +51,7 @@ set(TARGET_NAME kernel_entry_i386)
 # Binaries to include in custom linking
 set(LINK_INPUTS kernel_x86_mb2_entry kernel_x86_i386_entry)
 # Get paths to template and preprocessed linker scripts for i386-specific code.
-get_linker_script_path(kernel_i386)
+get_linker_script_path(kernel_i386 LINKER_SCRIPT_IN LINKER_SCRIPT)
 
 set(LINK_OTHER_OPTIONS	"-melf_i386,--gc-sections,--build-id=none")
 set(LINK_OPTIONS "LINKER:,-T${LINKER_SCRIPT},${LINK_OTHER_OPTIONS}")
@@ -80,11 +80,12 @@ make_ldsym_readonly_comm(${TARGET_NAME})
 #
 set(TARGET_NAME kernel_entry)
 
-get_dumped_section_files(.text .data .rodata)
+get_dumped_section_files(DUMPED_SECTION_FILES .text .data .rodata)
 
 add_custom_command(OUTPUT ${DUMPED_SECTION_FILES}
 	COMMAND ${BASH} ${DUMP_SECTIONS_SCRIPT} $<TARGET_FILE:kernel_entry_i386> i386 ${DUMPED_SECTION_FN_PREFIX} ${CONFIG_ARCH_BITNESS} ${CMAKE_C_COMPILER} ${CMAKE_OBJCOPY}
 	COMMENT "Dumping sections of kernel_entry_i386"
+	DEPENDS ${DUMP_SECTIONS_SCRIPT}
 	VERBATIM)
 
 get_null_file(cpp)
@@ -100,7 +101,7 @@ get_null_file(cpp)
 add_executable(${TARGET_NAME} ${NULL_FILE})
 
 # Get paths to template and preprocessed linker scripts for the final kernel.
-get_linker_script_path(kernel)
+get_linker_script_path(kernel LINKER_SCRIPT_IN LINKER_SCRIPT)
 
 set(LINK_OTHER_OPTIONS	"--gc-sections,--build-id=none,--whole-archive")
 set(LINK_OPTIONS "LINKER:,-T${LINKER_SCRIPT},${LINK_OTHER_OPTIONS}")

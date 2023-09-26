@@ -14,11 +14,6 @@ SECTIONS
 
 	_start = ADDR(.i386.text);
 
-	.i386.bss (NOLOAD) : ALIGN(4K)
-	{
-		QUAD(0)
-	}
-
 	.i386.rodata : ALIGN(4K)
 	{
 		KEEP(*(.i386.rodata))
@@ -45,6 +40,8 @@ SECTIONS
 		DEFINE_LDSYM(kernel_data_start_vma, 	__KERNEL_DATA_START_VMA)
 		DEFINE_LDSYM(kernel_data_start_lma, 	__KERNEL_DATA_START_LMA)
 		DEFINE_LDSYM(kernel_data_size, 		__KERNEL_DATA_SIZE)
+
+		DEFINE_LDSYM(kernel_main, 		main)
 	}
 
 	.i386.data : ALIGN(4K)
@@ -76,8 +73,8 @@ SECTIONS
 
 	.text : AT(__KERNEL_TEXT_START_LMA)
 	{
-		*(.text)
-		*(.text.*)
+		KEEP(*(.text))
+		KEEP(*(.text.*))
 	}
 
 	. = ALIGN(4K);
@@ -87,8 +84,8 @@ SECTIONS
 
 	.rodata : AT(__KERNEL_RODATA_START_LMA)
 	{
-		*(.rodata)
-		*(.rodata.*)
+		KEEP(*(.rodata))
+		KEEP(*(.rodata.*))
 	}
 
 	. = ALIGN(4K);
@@ -98,8 +95,8 @@ SECTIONS
 
 	.data : AT(__KERNEL_DATA_START_LMA)
 	{
-		*(.data)
-		*(.data.*)
+		KEEP(*(.data))
+		KEEP(*(.data.*))
 	}
 
 	. = ALIGN(4K);
@@ -109,7 +106,7 @@ SECTIONS
 
 	.bss (NOLOAD) : AT(__KERNEL_DATA_START_LMA)
 	{
-		*(.bss)
+		KEEP(*(.bss))
 	}
 
 	. = ALIGN(4K);

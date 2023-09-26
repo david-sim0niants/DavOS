@@ -9,11 +9,7 @@
 
 .equ OPTIONAL_TAG_FLAG, 1
 
-#ifdef __ELF__
-	#define AUTO_KLUDGE 0
-#else
-	#define AUTO_KLUDGE 0x10000
-#endif
+.equ MULTIBOOT2_MAGIC, 0x36d76289
 
 header_start:
 	.align 4
@@ -23,102 +19,79 @@ header_start:
 	.long CHECKSUM
 
 	.align 8
-
-#ifndef __ELF__
-address_tag_start:
-	.short 2 /* type */
-	.short OPTIONAL_TAG_FLAG /* flags */
-	.long address_tag_end - address_tag_start /* size */
-	.long header_start /* header_addr */
-	.long _start /* load_addr */
-	.long data_end /* load_end_addr */
-	.long bss_end /* bss_end_addr */
-address_tag_end:
-
-entry_address_tag_start:
-	.short 3 /* type */
-	.short OPTIONAL_TAG_FLAG
-	.long entry_address_tag_end - entry_address_tag_start
-	.long _start
-entry_address_tag_end:
-#endif
-
 	.short 0 /* terminating tag type */
 	.short 0 /* terminating tag flags */
 	.long  8 /* terminating tag size */
-
 header_end:
 
 
-.section .data
-
-.type p_multiboot_info, @object
-.globl p_multiboot_info
-p_multiboot_info:
-	# pointer to multiboot info or NULL if we're not booted via multiboot
-	.long 0
-data_end:
-
-
-#include <config.h>
-# #include "gdt.h"
-
 .section .text
 
-# virtual memory address of the function that starts the ready to go kernel
-.globl __ldsym__kernel_text_start_vma
-# initial stack grows below the address where kernel start function will be located
-.globl __ldsym__stack_top
+#include <config.h>
+#include <ldsym.h>
 
-.type early_init, @function
-.globl early_init
+.globl x86_setup
+.globl _x86_i386_start
+
 
 .type _start, @function
 .globl _start
 _start:
-	cli
+	cli # disable all interrupts
+
+	cmp $MULTIBOOT2_MAGIC, %eax # compare EAX to multiboot2 magic
+	jne .L_start_no_mb2 # jump to failure label if not equal
+
 	mov (__ldsym__stack_top), %esp # setup stack pointer
-	call get_multiboot_info # get multiboot info
-	call early_init # early CPU and kernel initialization
+
+	push %ebx # EBX stores pointer to multiboot2 info, pass it as an argument
+	call x86_setup
 	test %eax, %eax
-	jnz .Lstart_fail
+	jnz .L_start_x86_setup_failed # jump to failure label, if non-zero value returned
 
-# 	call setup_gdt
-# .Lload_gdt:
-# 	lgdt (%eax)
-# 	mov $0x10, %ax 	# 0x10 = sizeof(GDT_Entry) * 2, where
-# 			# 2 == data segment selector index
-# 	mov %ax, %ds
-# 	mov %ax, %es
-# 	mov %ax, %fs
-# 	mov %ax, %gs
-# 	mov %ax, %ss
-# 	ljmp $0x8, $.Lnext 	# 0x8 == sizeof(GDT_Entry) * 1, where
-# 				# 1 == code segment selector index
-.Lnext:
-#if CONFIG_ARCH == ARCH_x86_64
-	.code64
-	movq __ldsym__kernel_text_start_vma(%rip), %rax
-	callq *%rax # jump onto kernel
-	.code32
-#else
-	jmp *__ldsym__kernel_text_start_vma # jump onto kernel
-#endif
+	jmp _x86_i386_start # jump to i386 entry
 
-.Lstart_fail:
+.L_start_unknown_state:
+	mov $errmsg_unknown_state, %esi
+	call print_err_hlt
+.L_start_x86_setup_failed:
+	mov $errmsg_x86_setup_failed, %esi
+	call print_err_hlt
+.L_start_no_mb2:
+	mov $errmsg_no_mb2, %esi
+	call print_err_hlt
+
+
+.equ VGA_TEXT_BUFFER, 0xB8000
+.equ RED_ON_BLACK, 0x4
+
+# print error in red
+print_err:
+	mov $VGA_TEXT_BUFFER, %edi
+.Lprint_err_loop:
+	movb (%esi), %al
+	test %al, %al
+	jz .Lprint_err_exit
+	mov %al, (%edi)
+	inc %edi
+	mov $RED_ON_BLACK, (%edi)
+	inc %edi
+	jmp .Lprint_err_loop
+.Lprint_err_exit:
+	ret
+
+# print error in red and halt the system
+print_err_hlt:
+	call print_err
 	hlt
 
 
-.equ MULTIBOOT2_MAGIC, 0x36d76289
+#define ERR_HEADER "MULTIBOOT2 ENTRY ERROR: "
 
-get_multiboot_info:
-	cmp $MULTIBOOT2_MAGIC, %eax # compare EAX value with the magic number
-	je .Lbooted_via_multiboot # avoid setting EBX value to zero
-	xor %ebx, %ebx
-.Lbooted_via_multiboot: # assign the pointer or NULL to p_multiboot_info
-	mov %ebx, p_multiboot_info
-	ret
-
-.section .kernel_start_placeholder, "ax", @progbits
-	hlt # placeholder code for the kernel start
-
+.section .rodata
+errmsg_no_mb2:
+	.asciz ERR_HEADER "Non-multiboot2 start."
+errmsg_x86_setup_failed:
+	.asciz ERR_HEADER "x86 setup failed."
+errmsg_unknown_state:
+	.asciz ERR_HEADER "Unknown state, shouldn't have returned from _x86_i386_start."

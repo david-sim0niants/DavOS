@@ -1,11 +1,11 @@
 # Build kernel entry for i386 mode.
 set(TARGET_NAME kernel_x86_i386_entry)
 
-set(SRC_FILES init.cc gdt.cc ../vga_text.cc ../cpuid.cc ../page_map.cc)
+set(SRC_FILES entry.cc gdt.cc ../vga_text.cc ../cpuid.cc ../page_map.cc)
 
 add_library(${TARGET_NAME} STATIC ${SRC_FILES})
 if (${CONFIG_ARCH} STREQUAL x86_64)
-	target_compile_options(${TARGET_NAME} PRIVATE -m32 -mno-sse)
+	target_compile_options(${TARGET_NAME} PRIVATE -m32 -mno-sse --save-temps)
 endif ()
 target_include_directories(${TARGET_NAME} PUBLIC
 	${x86_INCLUDE_DIRS} ${ROOT_INCLUDE_DIRS} ${KLIBC_INCLUDE_DIR})
