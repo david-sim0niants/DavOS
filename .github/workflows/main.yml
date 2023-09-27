@@ -35,7 +35,7 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install mtools
-        make kernel_iso
+        make boot_grub
 
     - name: Test
       working-directory: ${{env.BINARY_DIR}}
