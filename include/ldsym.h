@@ -10,8 +10,7 @@ extern uint64_t __ldsym__##name __attribute__((section(".ldsym")))
 
 #else
 
-#define DECLARE_LDSYM(name) \
-.globl __ldsym__##name
+#define DECLARE_LDSYM(name) .globl __ldsym__##name
 
 #endif // __ASSEMBLER__
 

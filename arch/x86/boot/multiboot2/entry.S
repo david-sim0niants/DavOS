@@ -1,17 +1,17 @@
 .code32
 
-.section .multiboot_header
+.section .multiboot2_header
 
 .equ MAGIC, 0xE85250D6
 .equ ARCHITECTURE, 0
-.equ HEADER_LENGTH, header_end - header_start
+.equ HEADER_LENGTH, .Lheader_end - .Lheader_start
 .equ CHECKSUM, -(MAGIC + ARCHITECTURE + HEADER_LENGTH)
 
 .equ OPTIONAL_TAG_FLAG, 1
 
 .equ MULTIBOOT2_MAGIC, 0x36d76289
 
-header_start:
+.Lheader_start:
 	.align 4
 	.long MAGIC
 	.long ARCHITECTURE
@@ -22,17 +22,16 @@ header_start:
 	.short 0 /* terminating tag type */
 	.short 0 /* terminating tag flags */
 	.long  8 /* terminating tag size */
-header_end:
+.Lheader_end:
 
 
-.section .text
+.section .text_entry, "ax", @progbits
 
 #include <config.h>
 #include <ldsym.h>
+#include <x86/i386/entry.h>
 
 .globl x86_setup
-.globl _x86_i386_start
-
 
 .type _start, @function
 .globl _start
@@ -61,6 +60,7 @@ _start:
 	mov $errmsg_no_mb2, %esi
 	call print_err_hlt
 
+.section .text
 
 .equ VGA_TEXT_BUFFER, 0xB8000
 .equ RED_ON_BLACK, 0x4
@@ -72,10 +72,11 @@ print_err:
 	movb (%esi), %al
 	test %al, %al
 	jz .Lprint_err_exit
-	mov %al, (%edi)
+	movb %al, (%edi)
 	inc %edi
-	mov $RED_ON_BLACK, (%edi)
+	movb $RED_ON_BLACK, (%edi)
 	inc %edi
+	inc %esi
 	jmp .Lprint_err_loop
 .Lprint_err_exit:
 	ret
