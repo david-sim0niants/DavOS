@@ -7,7 +7,12 @@ SECTIONS
 {
 	. = 1M;
 
-	.i386.text : ALIGN(4K)
+	.i386.multiboot2_header :
+	{
+		KEEP(*(.i386.multiboot2_header))
+	}
+
+	.i386.text : ALIGN(16)
 	{
 		KEEP(*(.i386.text))
 	}

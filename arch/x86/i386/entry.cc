@@ -282,6 +282,7 @@ static __FORCE_INLINE void far_jmp_to_main()
 	__builtin_unreachable();
 }
 
+
 static void __attribute__((section(".fake_main_text"))) fake_main()
 {
 	halt();

@@ -80,12 +80,18 @@ make_ldsym_readonly_comm(${TARGET_NAME})
 #
 set(TARGET_NAME kernel_entry)
 
-get_dumped_section_files(DUMPED_SECTION_FILES .text .data .rodata)
+set(DUMPED_SECTION_LABELS multiboot2_header text data rodata)
+set(DUMPED_SECTIONS multiboot2_header:a text:ax data:wa rodata:a)
+
+set(DUMPED_SECTION_NAMES ${DUMPED_SECTION_LABELS})
+list(TRANSFORM DUMPED_SECTION_NAMES PREPEND .)
+
+get_dumped_section_files(DUMPED_SECTION_FILES ${DUMPED_SECTION_NAMES})
 
 add_custom_command(OUTPUT ${DUMPED_SECTION_FILES}
-	COMMAND ${BASH} ${DUMP_SECTIONS_SCRIPT} $<TARGET_FILE:kernel_entry_i386> i386 ${DUMPED_SECTION_FN_PREFIX} ${CONFIG_ARCH_BITNESS} ${CMAKE_C_COMPILER} ${CMAKE_OBJCOPY}
+	COMMAND ${BASH} ${DUMP_SECTIONS_SCRIPT} $<TARGET_FILE:kernel_entry_i386> i386 ${DUMPED_SECTION_FN_PREFIX} ${CONFIG_ARCH_BITNESS} ${CMAKE_C_COMPILER} ${CMAKE_OBJCOPY} ${DUMPED_SECTIONS}
 	COMMENT "Dumping sections of kernel_entry_i386"
-	DEPENDS ${DUMP_SECTIONS_SCRIPT}
+	DEPENDS ${DUMP_SECTIONS_SCRIPT} kernel_entry_i386
 	VERBATIM)
 
 get_null_file(cpp)

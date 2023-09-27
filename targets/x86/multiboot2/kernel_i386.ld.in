@@ -7,9 +7,18 @@ SECTIONS
 {
 	. = 1M;
 
-	.text : ALIGN(4K)
+	.multiboot2_header :
 	{
-		KEEP(*(.multiboot_header))
+		KEEP(*(.multiboot2_header))
+	}
+
+	. += 1; /* Avoiding some stupid bug in linker or something I don't understand.
+		 Without this .multiboot2_header and .text sections appear to start
+		 at the same address besides they are both non-empty sections. */
+
+	.text : ALIGN(16)
+	{
+		*(.text_entry)
 		*(.text)
 		*(.text.*)
 	}

@@ -9,13 +9,14 @@ objcpy=$6
 
 section_memlayout="$(dirname $0)/section_memlayout.S"
 
-sections=( 	"text 			ax"
-		"data 			wa"
-		"rodata 		a")
+shift 6
+sections=$@
 
-for section in "${sections[@]}"
+for section in $sections
 do
-	read -r section_label_name section_flags <<< "$section"
+	IFS=':' read -ra parts <<< $section
+	section_label_name=${parts[0]}
+	section_flags=${parts[1]}
 
 	section_name=.$section_label_name
 	new_section_name=.$o_sect_prefix$section_name
@@ -36,7 +37,7 @@ do
 	# set section name, section flags
 	# gcc will compile from an assembly file template, which will include
 	# $section_bin_filename raw binary bytes in it
-	$cc -m$bitness -c $section_memlayout -o $section_obj_filename -DSECTION_NAME=$new_section_name -DSECTION_LABEL=$new_section_label_name -DSECTION_FLAGS=\"$section_flags\" -D__BINARY_FILE__=\"$section_bin_filename\" -U$o_sect_prefix &&\
+	$cc --save-temps -m$bitness -c $section_memlayout -o $section_obj_filename -DSECTION_NAME=$new_section_name -DSECTION_LABEL=$new_section_label_name -DSECTION_FLAGS=\"$section_flags\" -D__BINARY_FILE__=\"$section_bin_filename\" -U$o_sect_prefix &&\
 	# remove the temporary raw binary object
 	rm $section_bin_filename
 done
