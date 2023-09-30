@@ -1,36 +1,31 @@
-#ifndef _x86__VGA_TEXT_H__
-#define _x86__VGA_TEXT_H__
+#ifndef _x86_UTILS_VGA__TEXT_MODE_H__
+#define _x86_UTILS_VGA__TEXT_MODE_H__
 
 #include <stddef.h>
 #include <kstd/type_traits.h>
 #include <kstd/enum.h>
 
 
-namespace x86 {
+namespace x86::utils {
 
-static constexpr size_t vga_text_cols = 80, vga_text_rows = 25;
-static char *const vga_text_buffer_start = (char *const)0xB8000;
-static constexpr size_t vga_text_buffer_nr_chars = vga_text_cols * vga_text_rows;
-static constexpr size_t vga_text_buffer_size = vga_text_buffer_nr_chars * 2;
-
-struct VGATextColors {
+namespace vga_colors {
 	static constexpr char
-	Black 		= 0x0,
-	Blue         	= 0x1,
-	Green        	= 0x2,
-	Cyan         	= 0x3,
-	Red           	= 0x4,
-	Magenta       	= 0x5,
-	Brown         	= 0x6,
-	LightGray 	= 0x7,
-	DarkGray 	= 0x8,
-	LightBlue 	= 0x9,
-	LightGreen 	= 0xa,
-	LightCyan 	= 0xb,
-	LightRed 	= 0xc,
-	Pink 		= 0xd,
-	Yellow        	= 0xe,
-	White         	= 0xf;
+	black 		= 0x0,
+	blue         	= 0x1,
+	green        	= 0x2,
+	cyan         	= 0x3,
+	red           	= 0x4,
+	magenta       	= 0x5,
+	brown         	= 0x6,
+	light_gray 	= 0x7,
+	dark_gray 	= 0x8,
+	light_blue 	= 0x9,
+	light_green 	= 0xa,
+	light_cyan 	= 0xb,
+	light_red 	= 0xc,
+	pink 		= 0xd,
+	yellow        	= 0xe,
+	white         	= 0xf;
 };
 
 
@@ -50,7 +45,7 @@ public:
 private:
 	long putc__no_off_check(char c);
 
-	char curr_color = make_color(VGATextColors::White, VGATextColors::Black);
+	char curr_color = make_color(vga_colors::white, vga_colors::black);
 	long curr_offset = 0;
 
 public:
@@ -58,6 +53,11 @@ public:
 	static long write_buffer(const char *buf_data, long buf_size,
 		long offset, char color);
 	static void clear_screen();
+
+	inline static char *const buf_start = (char *const)0xB8000;
+	static constexpr size_t nr_cols = 80, nr_rows = 25;
+	static constexpr size_t nr_buf_chars = nr_cols * nr_rows;
+	static constexpr size_t nr_buf_bytes = nr_buf_chars * 2;
 };
 
 inline char VGAText::get_color() const
@@ -79,8 +79,8 @@ inline void VGAText::set_offset(long offset)
 {
 	if (offset < 0)
 		offset = 0;
-	else if (offset >= vga_text_buffer_nr_chars)
-		offset = vga_text_buffer_nr_chars;
+	else if (offset >= nr_buf_chars)
+		offset = nr_buf_chars;
 	curr_offset = offset;
 }
 
@@ -89,7 +89,7 @@ constexpr char VGAText::make_color(char fg, char bg)
 	return fg | (bg << 4);
 }
 
-} // namespace x86
+} // namespace x86::utils
 
 
 #endif

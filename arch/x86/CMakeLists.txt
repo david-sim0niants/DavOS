@@ -26,6 +26,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/x86/config.h.in
 
 add_subdirectory(i386)
 add_subdirectory(boot)
+add_subdirectory(utils)
 
 # Build x86 architecture specific library.
 set(TARGET_NAME kernel_x86)

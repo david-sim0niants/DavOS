@@ -7,7 +7,7 @@
 #include <ldsym.h>
 
 #include <x86/cpuid.h>
-#include <x86/vga_text.h>
+#include <x86/utils/vga/text_mode.h>
 #include <x86/paging.h>
 #include <x86/system.h>
 
@@ -21,8 +21,8 @@ enum LocalErr {
 	None = 0, KernelMapFail, PreKernelIdentityMapFail,
 };
 
-static void print_vendor_info(VGAText &vga_text, ArchInfo &arch_info);
-static bool try_x86_cpuid_verbose(ArchInfo &arch_info, VGAText &vga_text);
+static void print_vendor_info(utils::VGAText &vga_text, ArchInfo &arch_info);
+static bool try_x86_cpuid_verbose(ArchInfo &arch_info, utils::VGAText &vga_text);
 
 struct KernelSection {
 	void *start_vma, *start_lma; size_t size;
@@ -38,12 +38,13 @@ static LocalErr map_identity_pages_preceding_kernel(kstd::Byte *&map_location,
 static LocalErr map_kernel_memory(const KernelMemLayout &mem_layout,
 		kstd::Byte *&map_location, PageTable *page_table);
 
+namespace vga_colors = utils::vga_colors;
 constexpr auto red_on_black =
-	VGAText::make_color(VGATextColors::Red, VGATextColors::Black);
+	utils::VGAText::make_color(vga_colors::red, 	vga_colors::black);
 constexpr auto green_on_black =
-	VGAText::make_color(VGATextColors::Green, VGATextColors::Black);
+	utils::VGAText::make_color(vga_colors::green, 	vga_colors::black);
 constexpr auto white_on_black =
-	VGAText::make_color(VGATextColors::White, VGATextColors::Black);
+	utils::VGAText::make_color(vga_colors::white, 	vga_colors::black);
 
 static void setup_data_segments();
 static void far_jmp_to_main();
@@ -51,9 +52,9 @@ static void far_jmp_to_main();
 
 extern "C" void _x86_i386_start()
 {
-	VGAText::clear_screen();
+	utils::VGAText::clear_screen();
 
-	VGAText vga_text;
+	utils::VGAText vga_text;
 	ArchInfo arch_info;
 
 	if (!try_x86_cpuid_verbose(arch_info, vga_text)) {
@@ -136,7 +137,7 @@ extern "C" void _x86_i386_start()
 }
 
 
-static bool try_x86_cpuid_verbose(ArchInfo &arch_info, VGAText &vga_text)
+static bool try_x86_cpuid_verbose(ArchInfo &arch_info, utils::VGAText &vga_text)
 {
 	vga_text.puts("Checking CPUID.\r\n");
 
@@ -151,7 +152,7 @@ static bool try_x86_cpuid_verbose(ArchInfo &arch_info, VGAText &vga_text)
 	}
 }
 
-static void print_vendor_info(VGAText &vga_text, ArchInfo &arch_info)
+static void print_vendor_info(utils::VGAText &vga_text, ArchInfo &arch_info)
 {
 	vga_text.set_color(white_on_black);
 
