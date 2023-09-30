@@ -59,6 +59,7 @@ switch_mode(KERNEL)
 add_subdirectory(arch)
 add_subdirectory(boot)
 add_subdirectory(kernel)
+add_subdirectory(klibc)
 add_subdirectory(targets)
 
 decl_config(CONFIG_HAVE_TESTS OFF)

@@ -32,8 +32,9 @@ add_subdirectory(utils)
 set(TARGET_NAME kernel_x86)
 
 add_library(${TARGET_NAME} STATIC page_map.cc)
-set(INC_DIRS ${x86_INCLUDE_DIRS} ${ROOT_INCLUDE_DIRS} ${KLIBC_INCLUDE_DIR})
+set(INC_DIRS ${x86_INCLUDE_DIRS} ${ROOT_INCLUDE_DIRS})
 target_include_directories(${TARGET_NAME} PUBLIC ${INC_DIRS})
+target_link_libraries(${TARGET_NAME} PUBLIC klibc)
 
 if (${CONFIG_ARCH} STREQUAL x86_64)
 	target_compile_options(${TARGET_NAME} PRIVATE -mcmodel=kernel)

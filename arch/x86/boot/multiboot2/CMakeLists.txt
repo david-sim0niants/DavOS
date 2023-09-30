@@ -6,5 +6,6 @@ if (${CONFIG_ARCH} STREQUAL x86_64)
 	target_compile_options(${TARGET_NAME} PRIVATE -m32 -mno-sse)
 endif ()
 
-set(INC_DIRS ${ROOT_INCLUDE_DIRS} ${x86_INCLUDE_DIRS} ${KLIBC_INCLUDE_DIR})
+set(INC_DIRS ${ROOT_INCLUDE_DIRS} ${x86_INCLUDE_DIRS})
 target_include_directories(${TARGET_NAME} PRIVATE ${INC_DIRS})
+target_link_libraries(${TARGET_NAME} PRIVATE klibc)

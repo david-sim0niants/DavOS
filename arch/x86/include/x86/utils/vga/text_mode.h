@@ -38,6 +38,11 @@ public:
 	long get_offset() const;
 	void set_offset(long offset);
 
+	char get_char() const;
+	void set_char(char c);
+	char get_char_color() const;
+	void set_char_color(char color);
+
 	long putc(char c);
 	long puts(const char *str);
 	long write_buffer(const char *buf_ptr, size_t buf_len);
@@ -82,6 +87,28 @@ inline void VGAText::set_offset(long offset)
 	else if (offset >= nr_buf_chars)
 		offset = nr_buf_chars;
 	curr_offset = offset;
+}
+
+inline char VGAText::get_char() const
+{
+	return buf_start[curr_offset * 2];
+}
+
+inline void VGAText::set_char(char c)
+{
+	long byte_offset = curr_offset * 2;
+	buf_start[byte_offset] = c;
+	buf_start[byte_offset + 1] = curr_color;
+}
+
+inline char VGAText::get_char_color() const
+{
+	return buf_start[curr_offset * 2 + 1];
+}
+
+inline void VGAText::set_char_color(char color)
+{
+	buf_start[curr_offset * 2 + 1] = color;
 }
 
 constexpr char VGAText::make_color(char fg, char bg)

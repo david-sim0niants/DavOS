@@ -2,7 +2,6 @@
 #include <string.h>
 
 
-
 namespace x86::utils {
 
 long VGAText::putc(char c)
@@ -31,18 +30,10 @@ long VGAText::write_buffer(const char *buf_ptr, size_t buf_len)
 
 long VGAText::putc__no_off_check(char c)
 {
-	if (c == '\n') {
-		curr_offset += nr_cols;
-	} else if (c == '\r') {
-		long row_i = curr_offset / nr_cols;
-		curr_offset = row_i * nr_cols;
-	} else {
-		long byte_offset = curr_offset * 2;
-		buf_start[byte_offset] = c;
-		buf_start[byte_offset + 1] = static_cast<char>(curr_color);
-		++curr_offset;
-	}
-	return curr_offset;
+	long byte_offset = curr_offset * 2;
+	buf_start[byte_offset] = c;
+	buf_start[byte_offset + 1] = curr_color;
+	return ++curr_offset;
 }
 
 long VGAText::write_buffer(const char *buf_data, long buf_size,
