@@ -25,7 +25,8 @@ private:
 		Mode_Escape,
 		Mode_EscapeSequence,
 	} mode = Mode_Normal;
-	char escseq[3] {};
+	static constexpr unsigned int max_seq_len = 3;
+	char esc_seq[max_seq_len] {};
 	char seq_idx = 0;
 
 	void put_cr();

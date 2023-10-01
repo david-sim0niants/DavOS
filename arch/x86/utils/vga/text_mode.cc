@@ -1,8 +1,24 @@
 #include <x86/utils/vga/text_mode.h>
-#include <string.h>
 
 
 namespace x86::utils {
+
+void VGAText::set_offset(long offset)
+{
+	offset = kstd::clamp(offset, (long)0, nr_buf_chars - 1);
+	curr_offset = offset;
+	curr_x = offset % nr_cols;
+	curr_y = offset / nr_cols;
+}
+
+void VGAText::set_cursor(long x, long y)
+{
+	x = kstd::clamp(x, (long)0, nr_cols - 1);
+	y = kstd::clamp(y, (long)0, nr_rows - 1);
+	curr_offset = y * nr_cols + x;
+	curr_x = x;
+	curr_y = y;
+}
 
 long VGAText::putc(char c)
 {
@@ -33,7 +49,8 @@ long VGAText::putc__no_off_check(char c)
 	long byte_offset = curr_offset * 2;
 	buf_start[byte_offset] = c;
 	buf_start[byte_offset + 1] = curr_color;
-	return ++curr_offset;
+	inc_offset();
+	return curr_offset;
 }
 
 long VGAText::write_buffer(const char *buf_data, long buf_size,
@@ -50,9 +67,4 @@ long VGAText::write_buffer(const char *buf_data, long buf_size,
 	return offset + buf_size;
 }
 
-void VGAText::clear_screen()
-{
-	memset(buf_start, 0, nr_buf_bytes);
-}
-
-} // namespace x86
+} // namespace x86::utils

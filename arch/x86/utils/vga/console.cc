@@ -53,12 +53,12 @@ void VGAConsole::putc(const char c)
 			vga_text.putc(c);
 		}
 	} else if (mode == Mode_EscapeSequence) {
-		if (c == 'm' || seq_idx >= 3) {
+		if (c == 'm' || seq_idx >= max_seq_len) {
 			process_escseq();
 			seq_idx = 0;
 			mode = Mode_Normal;
 		} else {
-			escseq[seq_idx++] = c;
+			esc_seq[seq_idx++] = c;
 		}
 	}
 }
@@ -71,9 +71,8 @@ void VGAConsole::puts(const char *str)
 
 void VGAConsole::puts(const char *str, size_t len)
 {
-	while (len--) {
+	while (len--)
 		putc(*str++);
-	}
 }
 
 inline void VGAConsole::put_cr()
@@ -84,25 +83,29 @@ inline void VGAConsole::put_cr()
 
 inline void VGAConsole::put_lf()
 {
-	vga_text.set_offset(vga_text.get_offset() + VGAText::nr_cols);
+	long x, y;
+	vga_text.get_cursor(x, y);
+	vga_text.set_cursor(x, y + 1);
 }
 
 inline void VGAConsole::put_tb()
 {
-	vga_text.set_offset((vga_text.get_offset() / tab_stop + 1) * tab_stop);
+	long _, y;
+	vga_text.get_cursor(_, y);
+	vga_text.set_cursor(0, y);
 }
 
 inline void VGAConsole::put_bs()
 {
 	vga_text.set_char(' ');
-	vga_text.set_offset(vga_text.get_offset() - 1);
+	vga_text.dec_offset();
 }
 
 void VGAConsole::process_escseq()
 {
 	bool is_number = true;
 	for (char i = 0; i < seq_idx; ++i) {
-		if (!isdigit(escseq[i])) {
+		if (!isdigit(esc_seq[i])) {
 			is_number = false;
 			break;
 		}
@@ -111,8 +114,8 @@ void VGAConsole::process_escseq()
 	if (!is_number)
 		return;
 
-	escseq[seq_idx] = 0;
-	int number = atoi(escseq);
+	esc_seq[seq_idx] = 0;
+	int number = atoi(esc_seq);
 
 	if (number < 0)
 		return;
