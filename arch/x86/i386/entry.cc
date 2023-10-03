@@ -54,20 +54,19 @@ extern "C" void _x86_i386_start()
 	ArchInfo arch_info;
 
 	if (!try_x86_cpuid_verbose(arch_info, console)) {
-		console.puts("\033[5mCan't boot 64bit image.\r\n");
+		console.puts("\033[5mCan't boot 64bit image.\n");
 		halt();
 	}
 
 	print_vendor_info(console, arch_info);
 
 	if (kstd::test_flag(arch_info.ext_feature_flags,ExtFeatureFlags::LongMode)) {
-		console.puts("\033[3mLong mode available.\r\n");
+		console.puts("\033[3mLong mode available.\n");
 	} else {
 		console.puts("\033[5m"
-			"Long mode unavailable. Can't boot 64bit image.\r\n");
+			"Long mode unavailable. Can't boot 64bit image.\n");
 		halt();
 	}
-
 
 	KernelMemLayout mem_layout = {
 		.text = {
@@ -129,13 +128,13 @@ extern "C" void _x86_i386_start()
 static bool try_x86_cpuid_verbose(ArchInfo &arch_info, utils::VGAConsole &console)
 {
 	console.puts("\033[0m");
-	console.puts("Checking CPUID.\r\n");
+	console.puts("Checking CPUID.\n");
 
 	if (cpuid(arch_info)) {
-		console.puts("\033[3mCPUID available.\r\n");
+		console.puts("\033[3mCPUID available.\n");
 		return true;
 	} else {
-		console.puts("\033[5mCPUID unavailable.\r\n");
+		console.puts("\033[5mCPUID unavailable.\n");
 		return false;
 	}
 }

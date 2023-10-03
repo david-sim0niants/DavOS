@@ -74,6 +74,31 @@ template<> constexpr bool is_integral<unsigned long long>() 	{ return true; }
 
 template<typename T> constexpr bool is_integral_v = is_integral<T>();
 
+
+template<typename T> constexpr bool is_unsigned()
+{
+	static_assert(is_integral_v<T>, "Sign check is only for numeric types.");
+	return false;
+}
+
+template<> constexpr bool is_unsigned<bool>() 		{ return true; }
+
+template<> constexpr bool is_unsigned<unsigned char>() 	{ return true; }
+
+template<> constexpr bool is_unsigned<unsigned short>() { return true; }
+
+template<> constexpr bool is_unsigned<unsigned int>() 	{ return true; }
+
+template<> constexpr bool is_unsigned<unsigned long>() 	{ return true; }
+
+template<> constexpr bool is_unsigned<unsigned long long>() 	{ return true; }
+
+template<typename T> constexpr bool is_unsigned_v = is_unsigned<T>();
+
+template<typename T> constexpr bool is_signed() 	{ return !is_unsigned<T>(); }
+
+template<typename T> constexpr bool is_signed_v = is_signed<T>();
+
 }
 
 #endif

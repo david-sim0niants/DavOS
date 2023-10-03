@@ -77,8 +77,9 @@ void VGAConsole::write(const char *str, size_t len)
 
 inline void VGAConsole::put_cr()
 {
-	long row_i = vga_text.get_offset() / VGAText::nr_cols;
-	vga_text.set_offset(row_i * VGAText::nr_cols);
+	long _, y;
+	vga_text.get_cursor(_, y);
+	vga_text.set_cursor(0, y);
 }
 
 inline void VGAConsole::put_lf()
@@ -90,9 +91,7 @@ inline void VGAConsole::put_lf()
 
 inline void VGAConsole::put_tb()
 {
-	long _, y;
-	vga_text.get_cursor(_, y);
-	vga_text.set_cursor(0, y);
+	vga_text.set_offset((vga_text.get_offset() / tab_stop + 1) * tab_stop);
 }
 
 inline void VGAConsole::put_bs()
