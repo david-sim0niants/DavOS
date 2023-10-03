@@ -24,8 +24,8 @@ enum LocalErr {
 	None = 0, KernelMapFail, PreKernelIdentityMapFail,
 };
 
-static void print_vendor_info(utils::VGAConsole &console, ArchInfo &arch_info);
-static bool try_x86_cpuid_verbose(ArchInfo &arch_info, utils::VGAConsole &console);
+static void print_vendor_info(ArchInfo &arch_info, utils::VGA_OStream& os);
+static bool try_x86_cpuid_verbose(ArchInfo& arch_info, utils::VGA_OStream& os);
 
 struct KernelSection {
 	void *start_vma, *start_lma; size_t size;
@@ -45,26 +45,31 @@ static void setup_data_segments();
 static void far_jmp_to_main();
 
 
+static const char *red_on_black = "\033[5m";
+static const char *green_on_black = "\033[3m";
+static const char *reset_fmt = "\033[0m";
+
+
 extern "C" void _x86_i386_start()
 {
 	utils::VGAText::clear_screen();
-	utils::VGA_OStream ostream;
+	utils::VGA_OStream os;
 
-	utils::VGAConsole console;
 	ArchInfo arch_info;
 
-	if (!try_x86_cpuid_verbose(arch_info, console)) {
-		console.puts("\033[5mCan't boot 64bit image.\n");
+	if (!try_x86_cpuid_verbose(arch_info, os)) {
+		os << red_on_black << "Can't boot 64bit image.\n" << reset_fmt;
 		halt();
 	}
 
-	print_vendor_info(console, arch_info);
+	print_vendor_info(arch_info, os);
 
 	if (kstd::test_flag(arch_info.ext_feature_flags,ExtFeatureFlags::LongMode)) {
-		console.puts("\033[3mLong mode available.\n");
+		os << green_on_black << "Long mode available.\n" << reset_fmt;
 	} else {
-		console.puts("\033[5m"
-			"Long mode unavailable. Can't boot 64bit image.\n");
+		os 	<< red_on_black
+			<< "Long mode unavailable. Can't boot 64bit image.\n"
+			<< reset_fmt;
 		halt();
 	}
 
@@ -104,14 +109,15 @@ extern "C" void _x86_i386_start()
 
 	auto e = map_identity_pages_preceding_kernel(map_location, page_table);
 	if (e != LocalErr::None) {
-		console.puts("\033[5m"
-			"Failed to identity map pre kernel start memory.");
+		os 	<< red_on_black
+			<< "Failed to identity map pre kernel start memory."
+			<< reset_fmt;
 		halt();
 	}
 
 	e = map_kernel_memory(mem_layout, map_location, page_table);
 	if (e != LocalErr::None) {
-		console.puts("\033[5mFailed to map kernel memory.");
+		os << red_on_black << "Failed to map kernel memory.\n" << reset_fmt;
 		halt();
 	}
 
@@ -125,27 +131,26 @@ extern "C" void _x86_i386_start()
 }
 
 
-static bool try_x86_cpuid_verbose(ArchInfo &arch_info, utils::VGAConsole &console)
+static bool try_x86_cpuid_verbose(ArchInfo& arch_info, utils::VGA_OStream& os)
 {
-	console.puts("\033[0m");
-	console.puts("Checking CPUID.\n");
+	os << "Checking CPUID.\n";
 
 	if (cpuid(arch_info)) {
-		console.puts("\033[3mCPUID available.\n");
+		os << green_on_black << "CPUID available.\n" << reset_fmt;
 		return true;
 	} else {
-		console.puts("\033[5mCPUID unavailable.\n");
+		os << red_on_black << "CPUID unavailable.\n" << reset_fmt;
 		return false;
 	}
 }
 
-static void print_vendor_info(utils::VGAConsole &console, ArchInfo &arch_info)
+static void print_vendor_info(ArchInfo& arch_info, utils::VGA_OStream& os)
 {
-	console.puts("\033[0mProcessor vendor: ");
+	os << "Processor vendor: ";
 
 	const size_t vendor_id_len = sizeof(arch_info.vendor_id);
-	console.write(arch_info.vendor_id, vendor_id_len);
-	console.putc('\n');
+	os.write(arch_info.vendor_id, vendor_id_len);
+	os << '\n';
 }
 
 static LocalErr map_identity_pages_preceding_kernel(kstd::Byte *&map_location,

@@ -108,13 +108,13 @@ void Basic_OStream<CharT>::write_integral_dec(IntegralT integral)
 	char buffer[buf_len] {int_fill};
 	char *buf_start = buffer + buf_len;
 
-	if (is_neg)
-		integral = -integral;
+	using UIntegralT = typename Unsigned<IntegralT>::Type;
+	UIntegralT u_integral = is_neg ? -integral : integral;
 
 	do {
-		*--buf_start = integral % 10 + '0';
-		integral /= 10;
-	} while (integral > 0);
+		*--buf_start = (u_integral % 10) + '0';
+		u_integral /= 10;
+	} while (u_integral != 0);
 
 	if (int_fill != 0) [[unlikely]] {
 		if (is_neg)
@@ -138,7 +138,7 @@ void Basic_OStream<CharT>::write_integral_bin(IntegralT integral)
 	do {
 		*--buf_start = integral & 0x1 + '0';
 		integral >>= 1;
-	} while (integral > 0);
+	} while (integral != 0);
 
 	if (int_fill != 0) [[unlikely]]
 		write(buffer, buf_len);
@@ -156,7 +156,7 @@ void Basic_OStream<CharT>::write_integral_oct(IntegralT integral)
 	do {
 		*--buf_start = (integral & 0x7) + '0';
 		integral >>= 3;
-	} while (integral > 0);
+	} while (integral != 0);
 
 	if (int_fill != 0) [[unlikely]]
 		write(buffer, buf_len);
@@ -176,7 +176,7 @@ void Basic_OStream<CharT>::write_integral_hex(IntegralT integral)
 		char letter_a = case_type == CaseType::Uppercase ? 'A' : 'a';
 		*--buf_start = digit + (digit >= 10 ? (letter_a - 10) : '0');
 		integral >>= 4;
-	} while (integral > 0);
+	} while (integral != 0);
 
 	if (int_fill != 0) [[unlikely]]
 		write(buffer, buf_len);
