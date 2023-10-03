@@ -52,7 +52,7 @@ public:
 
 	long putc(char c); /* Put single character. Increments the offset. */
 	long puts(const char *str);
-	long write_buffer(const char *buf_ptr, size_t buf_len);
+	long write(const char *buf_ptr, size_t buf_len);
 
 private:
 	long putc__no_off_check(char c);

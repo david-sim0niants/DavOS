@@ -35,7 +35,7 @@ long VGAText::puts(const char *str)
 	return curr_offset;
 }
 
-long VGAText::write_buffer(const char *buf_ptr, size_t buf_len)
+long VGAText::write(const char *buf_ptr, size_t buf_len)
 {
 	size_t i;
 	for (i = 0; i < buf_len && curr_offset < nr_buf_chars; ++i) {

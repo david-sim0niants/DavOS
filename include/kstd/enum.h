@@ -1,6 +1,7 @@
 #ifndef _KSTD__ENUM_H__
 #define _KSTD__ENUM_H__
 
+#include <kstd/concepts.h>
 #include <kstd/type_traits.h>
 
 #define KSTD_DEFINE_ENUM_LOGIC_BITWISE_OPERATORS(enum_type) 		\
@@ -88,9 +89,6 @@ using __##enum_type##__shift_operators::operator<<=			\
 
 
 namespace kstd {
-
-template<typename T>
-concept Enum = kstd::is_enum<T>();
 
 template<Enum E> bool test_flag(E main_flags, E test_flags)
 {

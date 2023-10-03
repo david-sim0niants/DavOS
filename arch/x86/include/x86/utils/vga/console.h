@@ -15,7 +15,7 @@ public:
 	/* Put a null-terminated string. */
 	void puts(const char *str);
 	/* Put a string with length. */
-	void puts(const char *str, size_t len);
+	void write(const char *str, size_t len);
 
 	static constexpr unsigned int tab_stop = 8;
 private:

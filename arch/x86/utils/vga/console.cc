@@ -69,7 +69,7 @@ void VGAConsole::puts(const char *str)
 		putc(c);
 }
 
-void VGAConsole::puts(const char *str, size_t len)
+void VGAConsole::write(const char *str, size_t len)
 {
 	while (len--)
 		putc(*str++);

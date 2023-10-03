@@ -9,10 +9,12 @@
 #include <x86/cpuid.h>
 #include <x86/utils/vga/text_mode.h>
 #include <x86/utils/vga/console.h>
+#include <x86/utils/vga/ostream.h>
 #include <x86/paging.h>
 #include <x86/system.h>
 
 #include <kstd/new.h>
+#include <kstd/io.h>
 
 #include "gdt.h"
 
@@ -46,6 +48,7 @@ static void far_jmp_to_main();
 extern "C" void _x86_i386_start()
 {
 	utils::VGAText::clear_screen();
+	utils::VGA_OStream ostream;
 
 	utils::VGAConsole console;
 	ArchInfo arch_info;
@@ -142,7 +145,7 @@ static void print_vendor_info(utils::VGAConsole &console, ArchInfo &arch_info)
 	console.puts("\033[0mProcessor vendor: ");
 
 	const size_t vendor_id_len = sizeof(arch_info.vendor_id);
-	console.puts(arch_info.vendor_id, vendor_id_len);
+	console.write(arch_info.vendor_id, vendor_id_len);
 	console.putc('\n');
 }
 
