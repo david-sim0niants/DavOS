@@ -105,10 +105,10 @@ template<typename T> constexpr bool is_signed_v = is_signed<T>();
 template<typename T>
 struct Unsigned {
 	static_assert(is_integral_v<T>, "Getting unsigned version of a type is only for integral types.");
-	static_assert(types_match_v<char8_t, T>,  "char8_t not supported.");
-	static_assert(types_match_v<char16_t, T>, "char16_t not supported.");
-	static_assert(types_match_v<char32_t, T>, "char32_t not supported.");
-	static_assert(types_match_v<wchar_t, T>,  "wchar_t not supported.");
+	static_assert(!types_match_v<char8_t, T>,  "char8_t not supported.");
+	static_assert(!types_match_v<char16_t, T>, "char16_t not supported.");
+	static_assert(!types_match_v<char32_t, T>, "char32_t not supported.");
+	static_assert(!types_match_v<wchar_t, T>,  "wchar_t not supported.");
 	using Type = T;
 };
 
