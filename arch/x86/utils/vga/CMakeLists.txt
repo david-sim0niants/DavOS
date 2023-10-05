@@ -1,5 +1,5 @@
 set(TARGET_NAME arch_x86_utils_vga)
 add_library(${TARGET_NAME} INTERFACE)
-target_sources(${TARGET_NAME} INTERFACE text_mode.cc console.cc ostream.cc)
+target_sources(${TARGET_NAME} INTERFACE console.cc ostream.cc)
 target_include_directories(${TARGET_NAME} INTERFACE ${x86_INCLUDE_DIRS})
 target_link_libraries(${TARGET_NAME} INTERFACE klibc)

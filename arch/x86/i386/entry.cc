@@ -7,7 +7,6 @@
 #include <ldsym.h>
 
 #include <x86/cpuid.h>
-#include <x86/utils/vga/text_mode.h>
 #include <x86/utils/vga/console.h>
 #include <x86/utils/vga/ostream.h>
 #include <x86/paging.h>
@@ -47,29 +46,28 @@ static void far_jmp_to_main();
 
 static const char *red_on_black = "\033[5m";
 static const char *green_on_black = "\033[3m";
-static const char *reset_fmt = "\033[0m";
+static const char *reset_color = "\033[0m";
+static const char *reset_screen = "\033c";
 
 
 extern "C" void _x86_i386_start()
 {
-	utils::VGAText::clear_screen();
 	utils::VGA_OStream os;
 
 	ArchInfo arch_info;
-
 	if (!try_x86_cpuid_verbose(arch_info, os)) {
-		os << red_on_black << "Can't boot 64bit image.\n" << reset_fmt;
+		os << red_on_black << "Can't boot 64bit image.\n" << reset_color;
 		halt();
 	}
 
 	print_vendor_info(arch_info, os);
 
 	if (kstd::test_flag(arch_info.ext_feature_flags,ExtFeatureFlags::LongMode)) {
-		os << green_on_black << "Long mode available.\n" << reset_fmt;
+		os << green_on_black << "Long mode available.\n" << reset_color;
 	} else {
 		os 	<< red_on_black
 			<< "Long mode unavailable. Can't boot 64bit image.\n"
-			<< reset_fmt;
+			<< reset_color;
 		halt();
 	}
 
@@ -102,22 +100,20 @@ extern "C" void _x86_i386_start()
 		map_location_val = (map_location_pn + 1) * PageTable::size;
 
 	kstd::Byte *map_location = reinterpret_cast<kstd::Byte *>(map_location_val);
-
 	PageTable *page_table = new (map_location) PageTable;
-
 	map_location += PageTable::size;
 
 	auto e = map_identity_pages_preceding_kernel(map_location, page_table);
 	if (e != LocalErr::None) {
 		os 	<< red_on_black
 			<< "Failed to identity map pre kernel start memory."
-			<< reset_fmt;
+			<< reset_color;
 		halt();
 	}
 
 	e = map_kernel_memory(mem_layout, map_location, page_table);
 	if (e != LocalErr::None) {
-		os << red_on_black << "Failed to map kernel memory.\n" << reset_fmt;
+		os << red_on_black << "Failed to map kernel memory.\n" << reset_color;
 		halt();
 	}
 
@@ -136,10 +132,10 @@ static bool try_x86_cpuid_verbose(ArchInfo& arch_info, utils::VGA_OStream& os)
 	os << "Checking CPUID.\n";
 
 	if (cpuid(arch_info)) {
-		os << green_on_black << "CPUID available.\n" << reset_fmt;
+		os << green_on_black << "CPUID available.\n" << reset_color;
 		return true;
 	} else {
-		os << red_on_black << "CPUID unavailable.\n" << reset_fmt;
+		os << red_on_black << "CPUID unavailable.\n" << reset_color;
 		return false;
 	}
 }
