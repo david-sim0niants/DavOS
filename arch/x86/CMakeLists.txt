@@ -31,15 +31,12 @@ add_subdirectory(utils)
 # Build x86 architecture specific library.
 set(TARGET_NAME kernel_x86)
 
-add_library(${TARGET_NAME} STATIC page_map.cc)
+add_library(${TARGET_NAME} INTERFACE)
+target_sources(${TARGET_NAME} INTERFACE page_map.cc)
 set(INC_DIRS ${x86_INCLUDE_DIRS} ${ROOT_INCLUDE_DIRS})
-target_include_directories(${TARGET_NAME} PUBLIC ${INC_DIRS})
-target_link_libraries(${TARGET_NAME} PUBLIC klibc)
+target_include_directories(${TARGET_NAME} INTERFACE ${INC_DIRS})
+target_link_libraries(${TARGET_NAME} INTERFACE klibc)
 
 if (${CONFIG_ARCH} STREQUAL x86_64)
-	target_compile_options(${TARGET_NAME} PRIVATE -mcmodel=kernel)
+	target_compile_options(${TARGET_NAME} INTERFACE -mcmodel=kernel)
 endif ()
-
-# Build kernel_arch library that wraps kernel_x86 library in a cross-platform API.
-set(TARGET_NAME kernel_arch)
-add_library(${TARGET_NAME} ALIAS kernel_x86)

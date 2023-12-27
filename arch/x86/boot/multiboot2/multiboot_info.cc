@@ -48,20 +48,20 @@ template<> struct MultibootInfoTag<MemoryMap> {
 };
 
 /* Just converts the tag pointer to the specified type pointer. */
-template<MultibootInfoTagType type> static
-MultibootInfoTag<type> *get_multiboot_info_tag(MultibootInfoTagHead *tag_head)
+template<MultibootInfoTagType type> static const MultibootInfoTag<type> *
+get_multiboot_info_tag(const MultibootInfoTagHead *tag_head)
 {
-	return reinterpret_cast<MultibootInfoTag<type> *>(tag_head);
+	return reinterpret_cast<const MultibootInfoTag<type> *>(tag_head);
 }
 
 
 /* Read multiboot info tag given the type as a template argument. */
 template<MultibootInfoTagType type> static void read_multiboot_info_tag_(
-		MultibootInfoTagHead *tag_head, MultibootInfo& info);
+		const MultibootInfoTagHead *tag_head, MultibootInfo& info);
 
 /* Read multiboot info tag with boot command line type. */
 template<> void read_multiboot_info_tag_<BootCommandLine>(
-		MultibootInfoTagHead *tag_head, MultibootInfo& info)
+		const MultibootInfoTagHead *tag_head, MultibootInfo& info)
 {
 	auto *tag = get_multiboot_info_tag<BootCommandLine>(tag_head);
 	info.boot_cmd_line = tag->string;
@@ -69,7 +69,7 @@ template<> void read_multiboot_info_tag_<BootCommandLine>(
 
 /* Read multiboot info tag with basic memory info type. */
 template<> void read_multiboot_info_tag_<BasicMemInfo>(
-		MultibootInfoTagHead *tag_head, MultibootInfo& info)
+		const MultibootInfoTagHead *tag_head, MultibootInfo& info)
 {
 	auto *tag = get_multiboot_info_tag<BasicMemInfo>(tag_head);
 	info.basic_mem_info.mem_lower = tag->mem_lower;
@@ -78,7 +78,7 @@ template<> void read_multiboot_info_tag_<BasicMemInfo>(
 
 /* Read multiboot info tag with memory map type. */
 template<> void read_multiboot_info_tag_<MemoryMap>(
-		MultibootInfoTagHead *tag_head, MultibootInfo& info)
+		const MultibootInfoTagHead *tag_head, MultibootInfo& info)
 {
 	auto *tag = get_multiboot_info_tag<MemoryMap>(tag_head);
 	uint32_t entry_arr_mem_size = tag->head.size - sizeof(*tag);
@@ -90,15 +90,15 @@ template<> void read_multiboot_info_tag_<MemoryMap>(
 
 
 /* Read multiboot info tag with given type as function argument. */
-static void read_multiboot_info_tag(MultibootInfoTagHead *tag, MultibootInfo& info);
+static void read_multiboot_info_tag(const MultibootInfoTagHead *tag, MultibootInfo& info);
 /* Get the tag pointer after the current one */
-static MultibootInfoTagHead *get_next_tag(MultibootInfoTagHead *curr_tag);
+static const MultibootInfoTagHead *get_next_tag(const MultibootInfoTagHead *curr_tag);
 
 
-void read_multiboot_info(void *tags_struct, MultibootInfo& info)
+void read_multiboot_info(const void *tags_struct, MultibootInfo& info)
 {
 	// Get the fixed part.
-	auto *fixed_part = static_cast<MultibootInfoFixedPart *>(tags_struct);
+	auto *fixed_part = static_cast<const MultibootInfoFixedPart *>(tags_struct);
 
 	// Get the total_size.
 	uint32_t total_size = fixed_part->total_size;
@@ -106,7 +106,7 @@ void read_multiboot_info(void *tags_struct, MultibootInfo& info)
 	total_size -= sizeof(MultibootInfoFixedPart);
 
 	// Get the first tag.
-	auto *tag = reinterpret_cast<MultibootInfoTagHead *>(fixed_part + 1);
+	auto *tag = reinterpret_cast<const MultibootInfoTagHead *>(fixed_part + 1);
 
 	while (total_size > 0) {
 		read_multiboot_info_tag(tag, info); // read multiboot info tag
@@ -116,7 +116,7 @@ void read_multiboot_info(void *tags_struct, MultibootInfo& info)
 }
 
 
-static void read_multiboot_info_tag(MultibootInfoTagHead *tag, MultibootInfo& info)
+static void read_multiboot_info_tag(const MultibootInfoTagHead *tag, MultibootInfo& info)
 {
 	switch (tag->type) {
 	case BootCommandLine:
@@ -128,10 +128,10 @@ static void read_multiboot_info_tag(MultibootInfoTagHead *tag, MultibootInfo& in
 	}
 }
 
-inline MultibootInfoTagHead *get_next_tag(MultibootInfoTagHead *curr_tag)
+inline const MultibootInfoTagHead *get_next_tag(const MultibootInfoTagHead *curr_tag)
 {
-	return reinterpret_cast<MultibootInfoTagHead *>(
-			reinterpret_cast<char *>(curr_tag) + curr_tag->size);
+	return reinterpret_cast<const MultibootInfoTagHead *>(
+			reinterpret_cast<const char *>(curr_tag) + curr_tag->size);
 }
 
 }

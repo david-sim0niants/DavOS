@@ -6,7 +6,7 @@
 namespace x86 {
 
 struct MultibootInfo {
-	char *boot_cmd_line;
+	const char *boot_cmd_line;
 
 	struct BasicMemInfo {
 		uint32_t mem_lower;
@@ -22,7 +22,7 @@ struct MultibootInfo {
 
 		uint32_t entry_version;
 		uint32_t nr_entries;
-		struct Entry {
+		const struct Entry {
 			uint64_t base_addr;
 			uint64_t length;
 			Type type;
@@ -33,7 +33,7 @@ struct MultibootInfo {
 
 /* Reorganizes the multiboot info structure pointed by tags_struct and writes it
  * to the info struct.*/
-void read_multiboot_info(void *tags_struct, MultibootInfo& info);
+void read_multiboot_info(const void *tags_struct, MultibootInfo& info);
 
 }
 

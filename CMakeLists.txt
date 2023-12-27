@@ -52,6 +52,9 @@ endif ()
 set(ROOT_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/include ${CMAKE_BINARY_DIR}/generated/include)
 # Setup the kernel libc library include directory.
 set(KLIBC_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/klibc/include)
+# Setup the arch API library include directory.
+set(ARCH_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/arch/include)
+
 
 # Switch to mode with CMake configuration setup for building the kernel.
 switch_mode(KERNEL)
