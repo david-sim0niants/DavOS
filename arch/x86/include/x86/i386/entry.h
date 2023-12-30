@@ -7,7 +7,13 @@
 
 #else
 
-extern "C" void _x86_i386_start();
+#include <x86/boot/setup.h>
+
+namespace x86 {
+
+extern "C" void _x86_i386_start(x86::BootInfo *boot_info);
+
+}
 
 #endif
 

@@ -138,7 +138,7 @@ enum class PageMapErr {
 	PhysicalAddressOverflow, // self-explanatory
 };
 
-/* Struct contain how page mapping should be done. */
+/* Struct containing how page mapping should be done. */
 struct PageMappingInfo {
 	LineAddr linaddr_beg; /* Beginning linear address. */
 	PhysAddr phyaddr_beg; /* Beginning physical address. */

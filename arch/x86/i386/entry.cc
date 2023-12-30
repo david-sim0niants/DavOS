@@ -6,11 +6,15 @@
 #include <x86/config.h>
 #include <ldsym.h>
 
+#include <x86/i386/entry.h>
 #include <x86/cpuid.h>
 #include <x86/utils/vga/console.h>
 #include <x86/utils/vga/ostream.h>
 #include <x86/paging.h>
 #include <x86/system.h>
+#include <x86/boot/setup.h>
+
+#include <kernel/mem_layout.h>
 
 #include <kstd/new.h>
 #include <kstd/io.h>
@@ -26,18 +30,10 @@ enum LocalErr {
 static void print_vendor_info(ArchInfo &arch_info, utils::VGA_OStream& os);
 static bool try_x86_cpuid_verbose(ArchInfo& arch_info, utils::VGA_OStream& os);
 
-struct KernelSection {
-	void *start_vma, *start_lma; size_t size;
-};
-
-struct KernelMemLayout {
-	KernelSection text, bss, rodata, data;
-};
-
 static LocalErr map_identity_pages_preceding_kernel(kstd::Byte *&map_location,
 		PageTable *page_table);
 
-static LocalErr map_kernel_memory(const KernelMemLayout &mem_layout,
+static LocalErr map_kernel_memory(const kernel::KernelMemLayout& mem_layout,
 		kstd::Byte *&map_location, PageTable *page_table);
 
 static void setup_data_segments();
@@ -50,7 +46,7 @@ static const char *reset_color = "\033[0m";
 static const char *reset_screen = "\033c";
 
 
-extern "C" void _x86_i386_start()
+extern "C" void _x86_i386_start(x86::BootInfo *boot_info)
 {
 	utils::VGA_OStream os;
 
@@ -71,29 +67,6 @@ extern "C" void _x86_i386_start()
 		halt();
 	}
 
-	KernelMemLayout mem_layout = {
-		.text = {
-			.start_vma = (void *)__ldsym__kernel_text_start_vma,
-			.start_lma = (void *)__ldsym__kernel_text_start_lma,
-			.size = (size_t)__ldsym__kernel_text_size,
-		},
-		.bss = {
-			.start_vma = (void *)__ldsym__kernel_bss_start_vma,
-			.start_lma = (void *)__ldsym__kernel_bss_start_lma,
-			.size = (size_t)__ldsym__kernel_bss_size,
-		},
-		.rodata = {
-			.start_vma = (void *)__ldsym__kernel_rodata_start_vma,
-			.start_lma = (void *)__ldsym__kernel_rodata_start_lma,
-			.size = (size_t)__ldsym__kernel_rodata_size,
-		},
-		.data = {
-			.start_vma = (void *)__ldsym__kernel_data_start_vma,
-			.start_lma = (void *)__ldsym__kernel_data_start_lma,
-			.size = (size_t)__ldsym__kernel_data_size,
-		},
-	};
-
 	auto map_location_val = (unsigned long)__ldsym__kernel_image_end_lma;
 	auto map_location_pn = map_location_val / PageTable::size;
 	if (map_location_pn * PageTable::size != map_location_val)
@@ -111,7 +84,9 @@ extern "C" void _x86_i386_start()
 		halt();
 	}
 
-	e = map_kernel_memory(mem_layout, map_location, page_table);
+	halt();
+
+	e = map_kernel_memory(kernel::get_mem_layout(), map_location, page_table);
 	if (e != LocalErr::None) {
 		os << red_on_black << "Failed to map kernel memory.\n" << reset_color;
 		halt();
@@ -170,7 +145,7 @@ static LocalErr map_identity_pages_preceding_kernel(kstd::Byte *&map_location,
 	return LocalErr::None;
 }
 
-static LocalErr map_kernel_memory(const KernelMemLayout &mem_layout,
+static LocalErr map_kernel_memory(const kernel::KernelMemLayout &mem_layout,
 	kstd::Byte *&map_location, PageTable *page_table)
 {
 	PageMapErr e;

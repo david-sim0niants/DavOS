@@ -50,6 +50,8 @@ endif ()
 # Setup root include directories which are the top level include and
 # generated include directories.
 set(ROOT_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/include ${CMAKE_BINARY_DIR}/generated/include)
+# Setup the kernel include directory.
+set(KERNEL_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/kernel/include)
 # Setup the kernel libc library include directory.
 set(KLIBC_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/klibc/include)
 # Setup the arch API library include directory.

@@ -39,4 +39,37 @@ void *memset(void *dst, const int val, size_t cnt)
 	return dst;
 }
 
+
+size_t strlen(const char *str)
+{
+	size_t len = 0;
+	while (*str++)
+		++len;
+	return len;
+}
+
+size_t strnlen(const char *str, size_t n)
+{
+	size_t len = 0;
+	while (len <= n && *str++)
+		++len;
+	return len;
+}
+
+char *strcpy(char *dst, const char *src)
+{
+	char *tmp = dst;
+	while ((*dst++ = *src++));
+	*dst = '\0';
+	return tmp;
+}
+
+char *strncpy(char *dst, const char *src, size_t n)
+{
+	char *tmp = dst;
+	while (n-- && (*dst++ = *src++));
+	*dst = '\0';
+	return tmp;
+}
+
 }

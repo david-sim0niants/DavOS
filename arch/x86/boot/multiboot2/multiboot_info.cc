@@ -29,7 +29,7 @@ template<MultibootInfoTagType type> struct MultibootInfoTag;
 /* Boot command line tag struct. */
 template<> struct MultibootInfoTag<BootCommandLine> {
 	MultibootInfoTagHead head; // Tag head
-	char string[0]; // Boot command line string
+	char *string; // Boot command line string
 };
 
 /* Basic memory info tag struct. */
@@ -93,6 +93,8 @@ template<> void read_multiboot_info_tag_<MemoryMap>(
 static void read_multiboot_info_tag(const MultibootInfoTagHead *tag, MultibootInfo& info);
 /* Get the tag pointer after the current one */
 static const MultibootInfoTagHead *get_next_tag(const MultibootInfoTagHead *curr_tag);
+/* Get padded size. */
+static uint32_t padded_size(uint32_t size);
 
 
 void read_multiboot_info(const void *tags_struct, MultibootInfo& info)
@@ -108,9 +110,15 @@ void read_multiboot_info(const void *tags_struct, MultibootInfo& info)
 	// Get the first tag.
 	auto *tag = reinterpret_cast<const MultibootInfoTagHead *>(fixed_part + 1);
 
-	while (total_size > 0) {
+	int i = 0;
+
+	while (true) {
 		read_multiboot_info_tag(tag, info); // read multiboot info tag
-		total_size -= tag->size; // decrease the size by tag's size
+		const int tag_size = padded_size(tag->size);
+		if (total_size > tag_size)
+			total_size -= tag_size; // decrease the size by tag's size
+		else
+			break;
 		tag = get_next_tag(tag); // update the tag pointer
 	}
 }
@@ -121,17 +129,30 @@ static void read_multiboot_info_tag(const MultibootInfoTagHead *tag, MultibootIn
 	switch (tag->type) {
 	case BootCommandLine:
 		read_multiboot_info_tag_<BootCommandLine>(tag, info);
+		break;
 	case BasicMemInfo:
 		read_multiboot_info_tag_<BasicMemInfo>(tag, info);
+		break;
 	case MemoryMap:
 		read_multiboot_info_tag_<MemoryMap>(tag, info);
+		break;
 	}
 }
 
 inline const MultibootInfoTagHead *get_next_tag(const MultibootInfoTagHead *curr_tag)
 {
-	return reinterpret_cast<const MultibootInfoTagHead *>(
-			reinterpret_cast<const char *>(curr_tag) + curr_tag->size);
+	uintptr_t next_tag_addr = reinterpret_cast<uintptr_t>(curr_tag) + padded_size(curr_tag->size);
+	if (next_tag_addr & 7)
+		next_tag_addr = (1 + ((next_tag_addr) >> 3)) << 3;
+	return reinterpret_cast<const MultibootInfoTagHead *>(next_tag_addr);
+}
+
+inline static uint32_t padded_size(uint32_t size)
+{
+	if (size & 7)
+		return (1 + (size >> 3)) << 3;
+	else
+		return size;
 }
 
 }

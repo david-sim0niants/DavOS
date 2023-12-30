@@ -33,7 +33,7 @@ set(TARGET_NAME kernel_x86)
 
 add_library(${TARGET_NAME} INTERFACE)
 target_sources(${TARGET_NAME} INTERFACE page_map.cc)
-set(INC_DIRS ${x86_INCLUDE_DIRS} ${ROOT_INCLUDE_DIRS})
+set(INC_DIRS ${x86_INCLUDE_DIRS} ${ROOT_INCLUDE_DIRS} ${ARCH_INCLUDE_DIR})
 target_include_directories(${TARGET_NAME} INTERFACE ${INC_DIRS})
 target_link_libraries(${TARGET_NAME} INTERFACE klibc)
 

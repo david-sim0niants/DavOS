@@ -44,17 +44,16 @@ _start:
 	mov (__ldsym__stack_top), %esp # setup stack pointer
 
 	push %ebx # EBX stores pointer to multiboot2 info, pass it as an argument
-	call x86_setup
-	test %eax, %eax
-	jnz .L_start_x86_setup_failed # jump to failure label, if non-zero value returned
+	call _mb2_start # call _mb2_start entry
 
-	jmp _x86_i386_start # jump to i386 entry
+	test %eax, %eax
+	jnz .L_start_mb2_entry_failure
 
 .L_start_unknown_state:
 	mov $errmsg_unknown_state, %esi
 	call print_err_hlt
-.L_start_x86_setup_failed:
-	mov $errmsg_x86_setup_failed, %esi
+.L_start_mb2_entry_failure:
+	mov $errmsg_mb2_entry_failure, %esi
 	call print_err_hlt
 .L_start_no_mb2:
 	mov $errmsg_no_mb2, %esi
@@ -92,7 +91,7 @@ print_err_hlt:
 .section .rodata
 errmsg_no_mb2:
 	.asciz ERR_HEADER "Non-multiboot2 start."
-errmsg_x86_setup_failed:
-	.asciz ERR_HEADER "x86 setup failed."
+errmsg_mb2_entry_failure:
+	.asciz ERR_HEADER "Failure occurred in multiboot2 entry."
 errmsg_unknown_state:
-	.asciz ERR_HEADER "Unknown state, shouldn't have returned from _x86_i386_start."
+	.asciz ERR_HEADER "Unknown state."
