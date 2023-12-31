@@ -18,6 +18,7 @@
 
 #include <kstd/new.h>
 #include <kstd/io.h>
+#include <kstd/algorithm.h>
 
 #include "gdt.h"
 
@@ -29,6 +30,8 @@ enum LocalErr {
 
 static void print_vendor_info(ArchInfo &arch_info, utils::VGA_OStream& os);
 static bool try_x86_cpuid_verbose(ArchInfo& arch_info, utils::VGA_OStream& os);
+static kstd::MemorySpan find_free_memory(const BootInfo& boot_info,
+		uintptr_t min_addr, unsigned int alignment);
 
 static LocalErr map_identity_pages_preceding_kernel(kstd::Byte *&map_location,
 		PageTable *page_table);
@@ -67,30 +70,30 @@ extern "C" void _x86_i386_start(x86::BootInfo *boot_info)
 		halt();
 	}
 
-	auto map_location_val = (unsigned long)__ldsym__kernel_image_end_lma;
-	auto map_location_pn = map_location_val / PageTable::size;
-	if (map_location_pn * PageTable::size != map_location_val)
-		map_location_val = (map_location_pn + 1) * PageTable::size;
-
-	kstd::Byte *map_location = reinterpret_cast<kstd::Byte *>(map_location_val);
-	PageTable *page_table = new (map_location) PageTable;
-	map_location += PageTable::size;
-
-	auto e = map_identity_pages_preceding_kernel(map_location, page_table);
-	if (e != LocalErr::None) {
-		os 	<< red_on_black
-			<< "Failed to identity map pre kernel start memory."
-			<< reset_color;
-		halt();
-	}
-
+	const uintptr_t min_addr = kstd::max((uintptr_t)__ldsym__kernel_image_end_lma,
+			(uintptr_t)boot_info + boot_info->size);
+	kstd::MemorySpan pt_mem = find_free_memory(*boot_info, min_addr, PageTable::size_shift);
+	PageTable *page_table = reinterpret_cast<PageTable *>(pt_mem.ptr);
+	new (page_table) PageTable();
+	os << page_table << '\n';
 	halt();
 
-	e = map_kernel_memory(kernel::get_mem_layout(), map_location, page_table);
-	if (e != LocalErr::None) {
-		os << red_on_black << "Failed to map kernel memory.\n" << reset_color;
-		halt();
-	}
+	// auto e = map_identity_pages_preceding_kernel(pt_mem.ptr, );
+	// if (e != LocalErr::None) {
+	// 	os 	<< red_on_black
+	// 		<< "Failed to identity map pre kernel start memory."
+	// 		<< reset_color;
+	// 	halt();
+	// }
+
+	kernel::KernelMemLayout mem_layout = kernel::get_mem_layout();
+	os << (void *)mem_layout.text.start_lma << '\n';
+
+	// e = map_kernel_memory(kernel::get_mem_layout(), map_location, page_table);
+	// if (e != LocalErr::None) {
+	// 	os << red_on_black << "Failed to map kernel memory.\n" << reset_color;
+	// 	halt();
+	// }
 
 	set_curr_pt_ptr((PhysAddr)page_table);
 	// TODO: check the cpuid features
@@ -122,6 +125,28 @@ static void print_vendor_info(ArchInfo& arch_info, utils::VGA_OStream& os)
 	const size_t vendor_id_len = sizeof(arch_info.vendor_id);
 	os.write(arch_info.vendor_id, vendor_id_len);
 	os << '\n';
+}
+
+static kstd::MemorySpan find_free_memory(const BootInfo& boot_info,
+		uintptr_t min_addr, unsigned int alignment)
+{
+	for (size_t i = 0; boot_info.mmap.nr_entries; ++i){ 
+		auto& entry = boot_info.mmap.entries[i];
+		if (entry.type != arch::PhysicalMMapType::RAM)
+			continue;
+		uintptr_t end_addr = entry.base_addr + entry.length;
+		if (end_addr <= min_addr)
+			continue;
+
+		uintptr_t start_addr = kstd::max(min_addr, entry.base_addr);
+		if (((start_addr >> alignment) << alignment) != start_addr)
+			start_addr = ((start_addr >> alignment) + 1) << alignment;
+		end_addr = (end_addr >> alignment) << alignment;
+		if (start_addr >= end_addr)
+			continue;
+		return kstd::MemorySpan((void *)start_addr, end_addr - start_addr);
+	}
+	return kstd::MemorySpan{};
 }
 
 static LocalErr map_identity_pages_preceding_kernel(kstd::Byte *&map_location,

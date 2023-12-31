@@ -10,6 +10,7 @@
 namespace x86 {
 
 struct BootInfo {
+	size_t size;
 	const char *boot_cmd;
 	arch::PhysicalMMap mmap;
 };

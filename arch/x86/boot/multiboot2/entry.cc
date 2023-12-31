@@ -46,6 +46,9 @@ extern "C" int _mb2_start(void *mb_info_tags_struct)
 	BootInfo *boot_info = reinterpret_cast<BootInfo *>(boot_info_addr);
 	new (boot_info) BootInfo();
 
+	// assign total boot info memory size
+	boot_info->size = boot_info_mem_size;
+
 	// copy boot command
 	char *boot_cmd = reinterpret_cast<char *>(boot_info + 1);
 	boot_info->boot_cmd = boot_cmd;
@@ -54,6 +57,8 @@ extern "C" int _mb2_start(void *mb_info_tags_struct)
 	// copy mmap entries
 	auto *entries = reinterpret_cast<arch::PhysicalMMap::Entry *>(
 			boot_cmd + boot_cmd_size + 1);
+	boot_info->mmap.nr_entries = static_cast<size_t>(mb_info.mmap.nr_entries);
+	boot_info->mmap.entries = entries;
 	for (uint32_t i = 0; i < boot_info->mmap.nr_entries; ++i) {
 		entries[i].base_addr = (uintptr_t)mb_info.mmap.entries[i].base_addr;
 		entries[i].length = (size_t)mb_info.mmap.entries[i].length;

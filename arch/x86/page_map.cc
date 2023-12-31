@@ -5,7 +5,6 @@
 
 #include <kstd/overflow.h>
 #include <kstd/either.h>
-#include <kstd/maybe.h>
 #include <kstd/algorithm.h>
 #include <kstd/new.h>
 
@@ -33,9 +32,6 @@ template<int pml, SetEntryFlagsMode mode>
 static void set_entry_flags(PageTableEntry_<pml>& entry, PageEntryFlags flags);
 
 static bool check_alignment(LineAddr linaddr_beg, PhysAddr phyaddr_beg, PageSize ps);
-
-static kstd::Maybe<PageSize> find_max_page_size(
-		LineAddr linaddr_beg, PhysAddr phyaddr_beg, size_t size_limit);
 
 template<int pml> PageMapErr PageTable_<pml>::map_memory(
 		PageMappingInfo &info, kstd::MemoryRange& free_mem)
@@ -296,24 +292,6 @@ static bool check_alignment(LineAddr linaddr_beg, PhysAddr phyaddr_beg, PageSize
 {
 	return 	(linaddr_beg & (get_page_size_bytes(ps) - 1)) == 0 &&
 		(phyaddr_beg & (get_page_size_bytes(ps) - 1)) == 0;
-}
-
-static kstd::Maybe<PageSize> find_max_page_size(
-		LineAddr linaddr_beg, PhysAddr phyaddr_beg, size_t size_limit)
-{
-	for (int i = num_page_sizes - 1; i >= 0; --i) {
-		PageSize page_size = page_sizes[i];
-		auto page_size_bytes = get_page_size_bytes(page_size);
-
-		if ( 	(page_size_bytes > size_limit) 		||
-			(linaddr_beg & (page_size_bytes - 1)) 	||
-			(phyaddr_beg & (page_size_bytes - 1))
-		)
-			continue;
-		return page_size;
-	}
-
-	return {};
 }
 
 }

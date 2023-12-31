@@ -8,6 +8,7 @@
 #include <kstd/either.h>
 #include <kstd/enum.h>
 #include <kstd/memory.h>
+#include <kstd/maybe.h>
 
 
 #if CONFIG_ARCH == ARCH_x86_64
@@ -187,6 +188,8 @@ public:
 		= LineSize(1) << PageTableEntry_<pml>::controlled_bits;
 	/* Memory controlled by this page table. */
 	static constexpr auto controlled_mem = controlled_mem_per_entry * nr_entries;
+	/* Shift of page table size. */
+	static constexpr unsigned int size_shift = 12;
 
 private:
 	/* Same as map_pages__no_mm but the _no_chk suffix means it won't check
@@ -206,11 +209,29 @@ private:
 	static kstd::Either<PageTable_<pml - 1> *, PageMapErr> get_or_map_page_table(
 			PageTableEntry_<pml>& entry, kstd::MemoryRange& free_mem);
 
-public:
 	/* The exact array of entries. */
 	alignas(sizeof(PageTableEntryValue) * nr_entries)
 	PageTableEntry_<pml> entries[nr_entries] = {};
 };
+
+
+constexpr kstd::Maybe<PageSize> find_max_page_size(
+		LineAddr linaddr_beg, PhysAddr phyaddr_beg, size_t size_limit)
+{
+	for (int i = num_page_sizes - 1; i >= 0; --i) {
+		PageSize page_size = page_sizes[i];
+		auto page_size_bytes = get_page_size_bytes(page_size);
+
+		if ( 	(page_size_bytes > size_limit) 		||
+			(linaddr_beg & (page_size_bytes - 1)) 	||
+			(phyaddr_beg & (page_size_bytes - 1))
+		)
+			continue;
+		return page_size;
+	}
+
+	return {};
+}
 
 /* Page table with highest page map level able to controll whole linear memory. */
 using PageTable = PageTable_<max_page_map_level>;
