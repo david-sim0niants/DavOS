@@ -2,10 +2,11 @@
 #include <stddef.h>
 #include <string.h>
 
+#include <kernel_image.h>
 #include <config.h>
 #include <x86/config.h>
-#include <ldsym.h>
 
+#include <x86/ldsym.h>
 #include <x86/i386/entry.h>
 #include <x86/cpuid.h>
 #include <x86/utils/vga/console.h>
@@ -19,20 +20,24 @@
 #include <kstd/new.h>
 #include <kstd/io.h>
 #include <kstd/algorithm.h>
+#include <kstd/memory.h>
 
 #include "gdt.h"
 
 namespace x86 {
 
-enum LocalErr {
-	None = 0, KernelMapFail, PreKernelIdentityMapFail,
+enum class LocalErr {
+	None = 0, IdentityMapFail, KernelMapFail, PreKernelIdentityMapFail,
 };
 
 static void print_vendor_info(ArchInfo &arch_info, utils::VGA_OStream& os);
 static bool try_x86_cpuid_verbose(ArchInfo& arch_info, utils::VGA_OStream& os);
-static kstd::MemorySpan find_free_memory(const BootInfo& boot_info,
+static kstd::MemoryRange find_free_memory(const BootInfo& boot_info,
 		uintptr_t min_addr, unsigned int alignment);
 
+static PageMapErr map_pages__free_mem(BootInfo& boot_info, PageMappingInfo& map_info,
+		PageTable *page_table, uintptr_t& min_addr);
+static LocalErr identity_map_pages(BootInfo& boot_info, PageTable *page_table, uintptr_t& min_addr);
 static LocalErr map_identity_pages_preceding_kernel(kstd::Byte *&map_location,
 		PageTable *page_table);
 
@@ -70,13 +75,19 @@ extern "C" void _x86_i386_start(x86::BootInfo *boot_info)
 		halt();
 	}
 
-	const uintptr_t min_addr = kstd::max((uintptr_t)__ldsym__kernel_image_end_lma,
+	uintptr_t min_addr = kstd::max((uintptr_t)__ldsym__kernel_image_end_lma,
 			(uintptr_t)boot_info + boot_info->size);
-	kstd::MemorySpan pt_mem = find_free_memory(*boot_info, min_addr, PageTable::size_shift);
-	PageTable *page_table = reinterpret_cast<PageTable *>(pt_mem.ptr);
+	kstd::MemoryRange pt_mem = find_free_memory(*boot_info, min_addr, PageTable::size_shift);
+	PageTable *page_table = reinterpret_cast<PageTable *>(pt_mem.beg);
 	new (page_table) PageTable();
 	os << page_table << '\n';
-	halt();
+
+	LocalErr e;
+	e = identity_map_pages(*boot_info, page_table, min_addr);
+	if (e != LocalErr::None) {
+		os << red_on_black << "Failed to identity map pages.\n" << reset_color;
+		halt();
+	}
 
 	// auto e = map_identity_pages_preceding_kernel(pt_mem.ptr, );
 	// if (e != LocalErr::None) {
@@ -87,7 +98,6 @@ extern "C" void _x86_i386_start(x86::BootInfo *boot_info)
 	// }
 
 	kernel::KernelMemLayout mem_layout = kernel::get_mem_layout();
-	os << (void *)mem_layout.text.start_lma << '\n';
 
 	// e = map_kernel_memory(kernel::get_mem_layout(), map_location, page_table);
 	// if (e != LocalErr::None) {
@@ -98,6 +108,8 @@ extern "C" void _x86_i386_start(x86::BootInfo *boot_info)
 	set_curr_pt_ptr((PhysAddr)page_table);
 	// TODO: check the cpuid features
 	enable_paging();
+
+	halt();
 
 	load_gdt();
 	setup_data_segments();
@@ -127,7 +139,7 @@ static void print_vendor_info(ArchInfo& arch_info, utils::VGA_OStream& os)
 	os << '\n';
 }
 
-static kstd::MemorySpan find_free_memory(const BootInfo& boot_info,
+static kstd::MemoryRange find_free_memory(const BootInfo& boot_info,
 		uintptr_t min_addr, unsigned int alignment)
 {
 	for (size_t i = 0; boot_info.mmap.nr_entries; ++i){ 
@@ -144,9 +156,65 @@ static kstd::MemorySpan find_free_memory(const BootInfo& boot_info,
 		end_addr = (end_addr >> alignment) << alignment;
 		if (start_addr >= end_addr)
 			continue;
-		return kstd::MemorySpan((void *)start_addr, end_addr - start_addr);
+		return kstd::MemoryRange((kstd::Byte *)start_addr, (kstd::Byte *)end_addr);
 	}
-	return kstd::MemorySpan{};
+	return {};
+}
+
+static PageMapErr map_pages__free_mem(BootInfo& boot_info, PageMappingInfo& map_info,
+		PageTable *page_table, uintptr_t& min_addr)
+{
+	while (true) {
+		kstd::MemoryRange free_mem = find_free_memory(boot_info, min_addr,
+				PageTableEntry_<1>::controlled_bits);
+		PageMapErr e = page_table->map_memory(map_info, free_mem);
+		if (e == PageMapErr::None)
+			break;
+		if (e != PageMapErr::NoFreeMem)
+			return e;
+		if (free_mem.beg >= free_mem.end)
+			return PageMapErr::NoFreeMem;
+		min_addr = (uintptr_t)free_mem.end;
+	}
+	return PageMapErr::None;
+}
+
+static LocalErr identity_map_pages(BootInfo& boot_info, PageTable *page_table, uintptr_t& min_addr)
+{
+	PageMapErr e = PageMapErr::None;
+	PageMappingInfo map_info;
+
+	map_info = {
+		.linaddr_beg = 0,
+		.phyaddr_beg = 0,
+		.phyaddr_end = (PhysAddr)__ldsym__kernel_image_start_lma,
+		.flags  = PageEntryFlags::Global
+			| PageEntryFlags::Supervisor
+			| PageEntryFlags::WriteAllowed
+			| PageEntryFlags::ExecuteDisabled,
+	};
+
+	e = map_pages__free_mem(boot_info, map_info, page_table, min_addr);
+	if (e != PageMapErr::None)
+		return LocalErr::IdentityMapFail;
+
+	auto sections = kernel_image::get_sections();
+	for (size_t i = 0 ; i < sections.size(); ++i) {
+		const kstd::Section& section = sections[i];
+		map_info.linaddr_beg = section.lma_start;
+		map_info.phyaddr_beg = section.lma_start;
+		map_info.phyaddr_end = section.lma_start + section.size;
+		map_info.flags = PageEntryFlags::Global | PageEntryFlags::Supervisor;
+		map_info.flags |= kstd::switch_flag(PageEntryFlags::ExecuteDisabled,
+			(section.flags & kstd::SectionFlag::Executable) != kstd::SectionFlag::Executable);
+		map_info.flags |= kstd::switch_flag(PageEntryFlags::WriteAllowed,
+			(section.flags & kstd::SectionFlag::Write) == kstd::SectionFlag::Write);
+		e = map_pages__free_mem(boot_info, map_info, page_table, min_addr);
+		if (e != PageMapErr::None)
+			return LocalErr::IdentityMapFail;
+	}
+
+	return LocalErr::None;
 }
 
 static LocalErr map_identity_pages_preceding_kernel(kstd::Byte *&map_location,

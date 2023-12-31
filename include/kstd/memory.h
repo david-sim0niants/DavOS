@@ -12,6 +12,7 @@ struct MemoryRange_ {
 	Ptr_T beg {};
 	Ptr_T end {};
 
+	constexpr MemoryRange_() = default;
 	constexpr MemoryRange_(Ptr_T beg, Ptr_T end)
 		: beg(beg), end(end)
 	{}

@@ -21,8 +21,13 @@ extern "C" {
 /* Link defined symbol declarations go here. */
 
 DECLARE_LDSYM(stack_top);
+DECLARE_LDSYM(kernel_image_start_vma);
+DECLARE_LDSYM(kernel_image_start_lma);
 DECLARE_LDSYM(kernel_image_end_vma);
 DECLARE_LDSYM(kernel_image_end_lma);
+DECLARE_LDSYM(kernel_ldsym_start_vma);
+DECLARE_LDSYM(kernel_ldsym_start_lma);
+DECLARE_LDSYM(kernel_ldsym_size);
 DECLARE_LDSYM(kernel_text_start_vma);
 DECLARE_LDSYM(kernel_text_start_lma);
 DECLARE_LDSYM(kernel_text_size);

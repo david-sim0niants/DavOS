@@ -35,7 +35,7 @@ add_library(${TARGET_NAME} INTERFACE)
 target_sources(${TARGET_NAME} INTERFACE page_map.cc)
 set(INC_DIRS ${x86_INCLUDE_DIRS} ${ROOT_INCLUDE_DIRS} ${ARCH_INCLUDE_DIR})
 target_include_directories(${TARGET_NAME} INTERFACE ${INC_DIRS})
-target_link_libraries(${TARGET_NAME} INTERFACE klibc)
+target_link_libraries(${TARGET_NAME} INTERFACE klibc arch_x86_utils_vga)
 
 if (${CONFIG_ARCH} STREQUAL x86_64)
 	target_compile_options(${TARGET_NAME} INTERFACE -mcmodel=kernel)

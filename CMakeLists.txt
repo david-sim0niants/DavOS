@@ -56,7 +56,8 @@ set(KERNEL_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/kernel/include)
 set(KLIBC_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/klibc/include)
 # Setup the arch API library include directory.
 set(ARCH_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/arch/include)
-
+# Setup the targets include directory
+set(TARGETS_INLUDE_DIR ${CMAKE_SOURCE_DIR}/targets)
 
 # Switch to mode with CMake configuration setup for building the kernel.
 switch_mode(KERNEL)

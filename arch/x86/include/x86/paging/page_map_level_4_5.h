@@ -149,9 +149,9 @@ const unsigned PageTableEntry_<pml>::index_bits =
 	constants::page_entry_index_bits;
 
 template<>
-inline const unsigned PageTableEntry_<1>::controlled_bits = 12;
+inline constexpr unsigned PageTableEntry_<1>::controlled_bits = 12;
 template<int pml>
-inline const unsigned PageTableEntry_<pml>::
+inline constexpr unsigned PageTableEntry_<pml>::
 	controlled_bits = PageTableEntry_<pml - 1>::controlled_bits
 			+ PageTableEntry_<pml - 1>::index_bits;
 

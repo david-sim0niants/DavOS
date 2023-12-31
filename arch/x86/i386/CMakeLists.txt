@@ -8,5 +8,6 @@ if (${CONFIG_ARCH} STREQUAL x86_64)
 	target_compile_options(${TARGET_NAME} PRIVATE -m32 -mno-sse)
 endif ()
 target_include_directories(${TARGET_NAME} PUBLIC
-	${x86_INCLUDE_DIRS} ${ARCH_INCLUDE_DIR} ${ROOT_INCLUDE_DIRS} ${KERNEL_INCLUDE_DIR})
+	${x86_INCLUDE_DIRS} ${ARCH_INCLUDE_DIR} ${ROOT_INCLUDE_DIRS}
+	${KERNEL_INCLUDE_DIR} ${TARGETS_INLUDE_DIR})
 target_link_libraries(${TARGET_NAME} PRIVATE arch_x86_utils_vga klibc)

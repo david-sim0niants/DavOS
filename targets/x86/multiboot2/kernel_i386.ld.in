@@ -7,6 +7,10 @@ SECTIONS
 {
 	. = 1M;
 
+	__KERNEL_IMAGE_START_LMA = .;
+	__KERNEL_IMAGE_START_VMA = .;
+
+	DEFINE_SECTION_START(I386_TEXT, ., .)
 	.multiboot2_header :
 	{
 		KEEP(*(.multiboot2_header))
@@ -22,18 +26,44 @@ SECTIONS
 		*(.text)
 		*(.text.*)
 	}
+	DEFINE_SECTION_SIZE(I386_TEXT, . - SECTION_START_VMA(I386_TEXT))
 
+	DEFINE_SECTION_START(I386_RODATA, ., .)
 	.rodata : ALIGN(4K)
 	{
 		*(.rodata)
 		*(.rodata.*)
 	}
+	DEFINE_SECTION_SIZE(I386_RODATA, . - SECTION_START_VMA(I386_RODATA))
 
+	DEFINE_SECTION_START(LDSYM, ., .)
 	.ldsym : ALIGN(4K)
 	{
 		DEFINE_LDSYM(stack_top, 		__STACK_TOP)
-		DEFINE_LDSYM(kernel_image_end_vma, 	0)
-		DEFINE_LDSYM(kernel_image_end_lma, 	0)
+		DEFINE_LDSYM(kernel_image_start_vma, 	__KERNEL_IMAGE_START_VMA)
+		DEFINE_LDSYM(kernel_image_start_lma, 	__KERNEL_IMAGE_START_LMA)
+		DEFINE_LDSYM(kernel_image_end_vma, 	__KERNEL_IMAGE_END_VMA)
+		DEFINE_LDSYM(kernel_image_end_lma, 	__KERNEL_IMAGE_END_LMA)
+
+		DEFINE_LDSYM(kernel_i386_text_start_vma, 	SECTION_START_VMA(I386_TEXT))
+		DEFINE_LDSYM(kernel_i386_text_start_lma, 	SECTION_START_LMA(I386_TEXT))
+		DEFINE_LDSYM(kernel_i386_text_size, 	SECTION_SIZE(I386_TEXT))
+
+		DEFINE_LDSYM(kernel_i386_rodata_start_vma, 	SECTION_START_VMA(I386_RODATA))
+		DEFINE_LDSYM(kernel_i386_rodata_start_lma, 	SECTION_START_LMA(I386_RODATA))
+		DEFINE_LDSYM(kernel_i386_rodata_size, 	SECTION_SIZE(I386_RODATA))
+
+		DEFINE_LDSYM(kernel_ldsym_start_vma, 	SECTION_START_VMA(LDSYM))
+		DEFINE_LDSYM(kernel_ldsym_start_lma, 	SECTION_START_LMA(LDSYM))
+		DEFINE_LDSYM(kernel_ldsym_size, 	SECTION_SIZE(LDSYM))
+
+		DEFINE_LDSYM(kernel_i386_data_start_vma, 	SECTION_START_VMA(I386_DATA))
+		DEFINE_LDSYM(kernel_i386_data_start_lma, 	SECTION_START_LMA(I386_DATA))
+		DEFINE_LDSYM(kernel_i386_data_size, 	SECTION_SIZE(I386_DATA))
+
+		DEFINE_LDSYM(kernel_stack_start_vma, 	SECTION_START_VMA(STACK))
+		DEFINE_LDSYM(kernel_stack_start_lma, 	SECTION_START_LMA(STACK))
+		DEFINE_LDSYM(kernel_stack_size, 	SECTION_SIZE(STACK))
 
 		DEFINE_LDSYM(kernel_text_start_vma, 	__FAKE_KERNEL_MAIN)
 		DEFINE_LDSYM(kernel_text_start_lma, 	__FAKE_KERNEL_MAIN)
@@ -53,16 +83,21 @@ SECTIONS
 
 		DEFINE_LDSYM(kernel_main, 		__FAKE_KERNEL_MAIN)
 	}
+	DEFINE_SECTION_SIZE(LDSYM, . - SECTION_START_VMA(LDSYM))
 
+	DEFINE_SECTION_START(I386_DATA, ., .)
 	.data : ALIGN(4K)
 	{
 		*(.data)
 	}
+	DEFINE_SECTION_SIZE(I386_DATA, . - SECTION_START_VMA(I386_DATA))
 
+	DEFINE_SECTION_START(STACK, ., .)
 	.stack BLOCK(CONFIG_STACK_SIZE) (NOLOAD) : ALIGN(4K)
 	{
 		. += CONFIG_STACK_SIZE;
 	}
+	DEFINE_SECTION_SIZE(STACK, . - SECTION_START_VMA(STACK))
 
 	PROVIDE(__STACK_TOP = .);
 	PROVIDE(__FAKE_KERNEL_MAIN = .);
@@ -73,6 +108,9 @@ SECTIONS
 	}
 
 	PROVIDE(__FAKE_KERNEL_MAIN_TEXT_SIZE = . - __FAKE_KERNEL_MAIN);
+
+	__KERNEL_IMAGE_END_VMA = .;
+	__KERNEL_IMAGE_END_LMA = .;
 
 	/DISCARD/ :
 	{

@@ -3,6 +3,9 @@
 #include <string.h>
 #include <compiler_attributes.h>
 
+#include <x86/utils/vga/ostream.h>
+#include <x86/system.h>
+
 #include <kstd/overflow.h>
 #include <kstd/either.h>
 #include <kstd/algorithm.h>
@@ -225,7 +228,9 @@ PageTable_<pml>::get_or_map_page_table(PageTableEntry_<pml>& entry, kstd::Memory
 		entry.set_present(true);
 	}
 
-	return reinterpret_cast<PageTable_<pml - 1> *>(next_pt_addr);
+	auto *next_pt = reinterpret_cast<PageTable_<pml - 1> *>(next_pt_addr);
+	new (next_pt) PageTable_<pml - 1>();
+	return next_pt;
 }
 
 /* Define the page table class. */
