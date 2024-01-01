@@ -11,7 +11,7 @@ namespace x86::utils {
 
 VGAConsole::VGAConsole()
 {
-	reset();
+	set_cursor(0, 0);
 }
 
 void VGAConsole::putc(const char c)

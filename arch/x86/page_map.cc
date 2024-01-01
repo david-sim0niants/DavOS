@@ -3,9 +3,6 @@
 #include <string.h>
 #include <compiler_attributes.h>
 
-#include <x86/utils/vga/ostream.h>
-#include <x86/system.h>
-
 #include <kstd/overflow.h>
 #include <kstd/either.h>
 #include <kstd/algorithm.h>
@@ -18,8 +15,6 @@ enum class LocalErr {
 	Overflow,
 	NoFreeMemory,
 };
-
-static LocalErr align_address_to_floor(unsigned long& addr, size_t alignment);
 
 template<int pml>
 static kstd::Either<PhysAddr, LocalErr> create_page_table(kstd::MemoryRange& free_mem);
@@ -99,9 +94,6 @@ template<int pml> PageMapErr PageTable_<pml>::map_pages__no_chk(
 	return PageMapErr::None;
 }
 
-template<PageSize page_size>
-static PageMapErr map_pages__;
-
 template<int pml> template<PageSize page_size>
 __FORCE_INLINE PageMapErr PageTable_<pml>::map_pages__const_ps(
 		PageMappingInfo& info, kstd::MemoryRange& free_mem)
@@ -167,7 +159,7 @@ __FORCE_INLINE PageMapErr PageTable_<pml>::map_pages__const_ps(
 			set_entry_flags<SetEntryFlagsMode::PageTable>(entry, info.flags);
 
 			// if there's already a page table mapped by the given entry, get it,
-			// otherwise create it and get it
+			// otherwise create and get it
 			auto next_pt_or_err = get_or_map_page_table(entry, free_mem);
 			if (auto *e = kstd::try_get<PageMapErr>(next_pt_or_err))
 				return *e;
@@ -208,7 +200,7 @@ template<int pml> kstd::Either<PageTable_<pml - 1> *, PageMapErr>
 PageTable_<pml>::get_or_map_page_table(PageTableEntry_<pml>& entry, kstd::MemoryRange& free_mem)
 {
 	static_assert(pml > 1, "Can't have pml == 1 here.");
-	PhysAddr next_pt_addr;
+	PhysAddr next_pt_addr {};
 
 	if (entry.is_present()) {
 		if (entry.maps_page())
@@ -228,45 +220,32 @@ PageTable_<pml>::get_or_map_page_table(PageTableEntry_<pml>& entry, kstd::Memory
 		entry.set_present(true);
 	}
 
-	auto *next_pt = reinterpret_cast<PageTable_<pml - 1> *>(next_pt_addr);
-	new (next_pt) PageTable_<pml - 1>();
-	return next_pt;
+	return reinterpret_cast<PageTable_<pml - 1> *>(next_pt_addr);
 }
 
 /* Define the page table class. */
 template class PageTable_<max_page_map_level>;
 
 
-static LocalErr align_address_to_floor(unsigned long& addr, size_t alignment)
-{
-	const auto prev_addr = addr;
-	addr = (addr / alignment) * alignment;
-	if (addr < prev_addr) [[likely]] {
-		if (kstd::add_overflow(addr, alignment)) [[unlikely]]
-			return LocalErr::Overflow;
-	}
-	return LocalErr::None;
-}
-
 template<int pml>
 static kstd::Either<PhysAddr, LocalErr> create_page_table(kstd::MemoryRange& free_mem)
 {
-	auto constexpr pt_size = PageTable_<pml>::size;
-	uintptr_t& free_mem_beg = reinterpret_cast<uintptr_t&>(free_mem.beg);
+	uintptr_t free_mem_beg = reinterpret_cast<uintptr_t>(free_mem.beg);
+	free_mem_beg = kstd::align_ceiled(free_mem_beg, PageTable_<pml>::size_shift);
+	if (free_mem_beg < (uintptr_t)free_mem.beg) [[unlikely]]
+		return LocalErr::Overflow;
 
-	auto e = align_address_to_floor(free_mem_beg, pt_size);
-	if (e == LocalErr::Overflow) [[unlikely]]
+	PhysAddr new_pt_addr = static_cast<PhysAddr>(free_mem_beg);
+
+	if (kstd::add_overflow(free_mem_beg, PageTable_<pml>::size)) [[unlikely]]
 		return LocalErr::NoFreeMemory;
 
-	auto new_pt_ptr = free_mem.beg;
-	if (kstd::add_overflow(free_mem_beg, pt_size)) [[unlikely]]
-		return LocalErr::NoFreeMemory;
-
+	free_mem.beg = reinterpret_cast<kstd::Byte *>(free_mem_beg);
 	if (free_mem.beg >= free_mem.end)
 		return LocalErr::NoFreeMemory;
 
-	new (new_pt_ptr) PageTable_<pml>;
-	return (PhysAddr)new_pt_ptr;
+	new ((void *)new_pt_addr) PageTable_<pml>();
+	return new_pt_addr;
 }
 
 template<SetEntryFlagsMode mode, int pml>

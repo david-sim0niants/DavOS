@@ -179,6 +179,8 @@ public:
 	 * used for mapping. */
 	PageMapErr map_pages(PageMappingInfo& info, kstd::MemoryRange& free_mem);
 
+	const PageTableEntry_<pml> *observe() const;
+
 	/* Number of page table entries. */
 	static constexpr auto nr_entries= 1 << PageTableEntry_<pml>::index_bits;
 	/* Total size of the page table. */
@@ -214,6 +216,11 @@ private:
 	PageTableEntry_<pml> entries[nr_entries] = {};
 };
 
+template<int pml>
+inline const PageTableEntry_<pml> *PageTable_<pml>::observe() const
+{
+	return entries;
+}
 
 constexpr kstd::Maybe<PageSize> find_max_page_size(
 		LineAddr linaddr_beg, PhysAddr phyaddr_beg, size_t size_limit)

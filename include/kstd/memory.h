@@ -2,6 +2,7 @@
 #define _KSTD__MEMORY_H__
 
 #include <stddef.h>
+#include <stdint.h>
 
 namespace kstd {
 
@@ -29,6 +30,23 @@ struct MemorySpan_ {
 		: ptr(ptr), size(size) {}
 };
 using MemorySpan = MemorySpan_<>;
+
+/* Align specified value by specified alignment flooring it. */
+template<typename T>
+inline T align_floored(T value, unsigned int alignment)
+{
+	return (value >> alignment) << alignment;
+}
+
+/* Align specified value by specified alignment ceiling it.
+ * Will overflow to 0 if the value is greater
+ * than the max value it can be with the given alignment.*/
+template<typename T>
+inline T align_ceiled(T value, unsigned int alignment)
+{
+	T floored = align_floored(value, alignment);
+	return floored + (value != floored) * (1 << alignment);
+}
 
 }
 

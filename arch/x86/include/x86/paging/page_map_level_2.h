@@ -24,37 +24,37 @@ constexpr auto max_possible_phyaddr_bits = 40;
 
 }
 
-template<int pml> inline bool PageTableEntry_<pml>::is_present()
+template<int pml> inline bool PageTableEntry_<pml>::is_present() const
 {
 	return !!(value & (1 << constants::pte_p_bit_loc));
 }
 
-template<int pml> inline bool PageTableEntry_<pml>::is_write_allowed()
+template<int pml> inline bool PageTableEntry_<pml>::is_write_allowed() const
 {
 	return !!(value & (1 << constants::pte_rw_bit_loc));
 }
 
-template<int pml> inline bool PageTableEntry_<pml>::is_supervisor()
+template<int pml> inline bool PageTableEntry_<pml>::is_supervisor() const
 {
 	return !!(value & (1 << constants::pte_us_bit_loc));
 }
 
-template<int pml> inline bool PageTableEntry_<pml>::maps_page()
+template<int pml> inline bool PageTableEntry_<pml>::maps_page() const
 {
 	return !!(value & (1 << constants::pte_ps_bit_loc)) || (pml == 1);
 }
 
-template<int pml> inline bool PageTableEntry_<pml>::maps_page_table()
+template<int pml> inline bool PageTableEntry_<pml>::maps_page_table() const
 {
 	return !(value & (1 << constants::pte_ps_bit_loc)) && (pml != 1);
 }
 
-template<int pml> inline bool PageTableEntry_<pml>::is_global()
+template<int pml> inline bool PageTableEntry_<pml>::is_global() const
 {
 	return !!(value & (1 << constants::pte_g_bit_loc));
 }
 
-template<int pml> inline bool PageTableEntry_<pml>::is_execute_disabled()
+template<int pml> inline bool PageTableEntry_<pml>::is_execute_disabled() const
 {
 	return false;
 }
@@ -116,14 +116,14 @@ inline void PageTableEntry_<pml>::set_execute_disabled(bool execute_disable)
 {
 }
 
-template<int pml> inline PhysAddr PageTableEntry_<pml>::get_page_table_addr()
+template<int pml> inline PhysAddr PageTableEntry_<pml>::get_page_table_addr() const
 {
 	static_assert(pml > 1,
 		"Can't get a page table address from the level 1 entry.");
 	return PhysAddr(value) & constants::pte_pt_mask;
 }
 
-template<int pml> inline PhysAddr PageTableEntry_<pml>::get_page_addr()
+template<int pml> inline PhysAddr PageTableEntry_<pml>::get_page_addr() const
 {
 	if constexpr (pml == 1)
 		return PhysAddr(value) & constants::pte_page_mask;

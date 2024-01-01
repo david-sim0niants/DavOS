@@ -57,6 +57,7 @@ static const char *reset_screen = "\033c";
 extern "C" void _x86_i386_start(x86::BootInfo *boot_info)
 {
 	utils::VGA_OStream os;
+	os << "\033c";
 
 	ArchInfo arch_info;
 	if (!try_x86_cpuid_verbose(arch_info, os)) {
@@ -81,6 +82,7 @@ extern "C" void _x86_i386_start(x86::BootInfo *boot_info)
 	PageTable *page_table = reinterpret_cast<PageTable *>(pt_mem.beg);
 	new (page_table) PageTable();
 	os << page_table << '\n';
+	min_addr += PageTable::size;
 
 	LocalErr e;
 	e = identity_map_pages(*boot_info, page_table, min_addr);
@@ -88,6 +90,35 @@ extern "C" void _x86_i386_start(x86::BootInfo *boot_info)
 		os << red_on_black << "Failed to identity map pages.\n" << reset_color;
 		halt();
 	}
+
+	for (size_t i = 0; i < PageTable::nr_entries; ++i) {
+		auto& entry = page_table->observe()[i];
+		if (!entry.is_present())
+			continue;
+		PageTable_<3> *pt = (PageTable_<3> *)entry.get_page_table_addr();
+		os << pt << "\n\t";
+		for (size_t j = 0; j < PageTable_<3>::nr_entries; ++j) {
+			auto& entry = pt->observe()[j];
+			if (!entry.is_present())
+				continue;
+			PageTable_<2> *pt = (PageTable_<2> *)entry.get_page_table_addr();
+			os << pt << "\n\t\t";
+			for (size_t k = 0; k < PageTable_<2>::nr_entries; ++k) {
+				auto& entry = pt->observe()[k];
+				if (!entry.is_present())
+					continue;
+				PageTable_<1> *pt = (PageTable_<1> *)entry.get_page_table_addr();
+				os << pt << "\n\t\t\t";
+				for (size_t l = 0; l < PageTable_<1>::nr_entries; ++l) {
+					auto& entry = pt->observe()[l];
+					if (!entry.is_present())
+						continue;
+					os << (int)(entry.get_page_addr() >> 12) << ':' << entry.is_global() << ' ';
+				}
+			}
+		}
+	}
+	halt();
 
 	// auto e = map_identity_pages_preceding_kernel(pt_mem.ptr, );
 	// if (e != LocalErr::None) {
@@ -151,9 +182,8 @@ static kstd::MemoryRange find_free_memory(const BootInfo& boot_info,
 			continue;
 
 		uintptr_t start_addr = kstd::max(min_addr, entry.base_addr);
-		if (((start_addr >> alignment) << alignment) != start_addr)
-			start_addr = ((start_addr >> alignment) + 1) << alignment;
-		end_addr = (end_addr >> alignment) << alignment;
+		start_addr = kstd::align_ceiled(start_addr, alignment);
+		end_addr = kstd::align_floored(end_addr, alignment);
 		if (start_addr >= end_addr)
 			continue;
 		return kstd::MemoryRange((kstd::Byte *)start_addr, (kstd::Byte *)end_addr);
@@ -167,14 +197,14 @@ static PageMapErr map_pages__free_mem(BootInfo& boot_info, PageMappingInfo& map_
 	while (true) {
 		kstd::MemoryRange free_mem = find_free_memory(boot_info, min_addr,
 				PageTableEntry_<1>::controlled_bits);
-		PageMapErr e = page_table->map_memory(map_info, free_mem);
-		if (e == PageMapErr::None)
-			break;
-		if (e != PageMapErr::NoFreeMem)
-			return e;
 		if (free_mem.beg >= free_mem.end)
 			return PageMapErr::NoFreeMem;
-		min_addr = (uintptr_t)free_mem.end;
+		PageMapErr e = page_table->map_memory(map_info, free_mem);
+		min_addr = (uintptr_t)free_mem.beg;
+		if (e != PageMapErr::NoFreeMem)
+			return e;
+		if (e == PageMapErr::None)
+			break;
 	}
 	return PageMapErr::None;
 }
