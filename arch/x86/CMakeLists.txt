@@ -24,7 +24,7 @@ endif ()
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/x86/config.h.in
 	${CMAKE_CURRENT_BINARY_DIR}/generated/include/x86/config.h)
 
-add_subdirectory(i386)
+add_subdirectory(entry)
 add_subdirectory(boot)
 add_subdirectory(utils)
 

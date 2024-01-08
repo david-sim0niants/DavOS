@@ -5,6 +5,8 @@
 
 #include <kstd/enum.h>
 
+#include <compiler_attributes.h>
+
 namespace x86 {
 
 enum class GDT_AccessFlags : uint8_t {
@@ -47,7 +49,7 @@ struct GDT_Ptr {
 extern GDT_Ptr gdt_ptr;
 
 
-inline void load_gdt()
+__FORCE_INLINE void load_gdt()
 {
 	asm volatile("lgdt (%[gdt_ptr])" :: [gdt_ptr]"r"(&gdt_ptr));
 }

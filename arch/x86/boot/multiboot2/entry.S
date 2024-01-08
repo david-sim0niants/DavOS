@@ -29,7 +29,6 @@
 
 #include <config.h>
 #include <ldsym.h>
-#include <x86/i386/entry.h>
 
 .globl x86_setup
 

@@ -1,6 +1,6 @@
 #include <x86/boot/multiboot2/multiboot_info.h>
 #include <x86/boot/setup.h>
-#include <x86/i386/entry.h>
+#include <x86/entry/i386_entry.h>
 
 #include <ldsym.h>
 
@@ -66,9 +66,9 @@ extern "C" int _mb2_start(void *mb_info_tags_struct)
 	}
 
 	// call "bootloader-independent" entry passing boot_info
-	_x86_i386_start(boot_info);
+	_i386_start(boot_info);
 
-	// returning from _x86_i386_start is a clear bug
+	// returning from _i386_start is a clear bug
 	__builtin_unreachable();
 
 	return 0;

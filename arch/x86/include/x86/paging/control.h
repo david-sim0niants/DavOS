@@ -4,6 +4,8 @@
 #include <x86/config.h>
 #include <x86/addressing.h>
 #include <x86/cr.h>
+#include <x86/system.h>
+
 #include <stdint.h>
 #include <compiler_attributes.h>
 
@@ -14,14 +16,14 @@ inline void set_curr_pt_ptr(PhysAddr pt_addr)
 	write_cr3(pt_addr);
 }
 
-inline void enable_paging__common()
+__FORCE_INLINE void enable_paging__common()
 {
 	auto cr0_val = read_cr0_flags();
 	cr0_val |= CR0_Flags::WP | CR0_Flags::PG;
 	write_cr0_flags(cr0_val);
 }
 
-inline void enable_paging_level_2()
+__FORCE_INLINE void enable_paging_level_2()
 {
 	auto cr4_val = read_cr4_flags();
 	cr4_val &= ~CR4_Flags::PAE;
@@ -30,7 +32,7 @@ inline void enable_paging_level_2()
 	enable_paging__common();
 }
 
-inline void enable_paging_level_3_PAE()
+__FORCE_INLINE void enable_paging_level_3_PAE()
 {
 	auto cr4_val = read_cr4_flags();
 	cr4_val |= CR4_Flags::PAE;
@@ -43,7 +45,7 @@ inline void enable_paging_level_3_PAE()
 	enable_paging__common();
 }
 
-inline void enable_paging_level_4()
+__FORCE_INLINE void enable_paging_level_4()
 {
 	auto cr4_val = read_cr4_flags();
 	cr4_val |= CR4_Flags::PAE;
@@ -57,7 +59,7 @@ inline void enable_paging_level_4()
 	enable_paging__common();
 }
 
-inline void enable_paging_level_5()
+__FORCE_INLINE void enable_paging_level_5()
 {
 	auto cr4_val = read_cr4_flags();
 	cr4_val |= CR4_Flags::PAE | CR4_Flags::LA57;

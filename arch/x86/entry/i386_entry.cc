@@ -7,7 +7,7 @@
 #include <x86/config.h>
 
 #include <x86/ldsym.h>
-#include <x86/i386/entry.h>
+#include <x86/entry/i386_entry.h>
 #include <x86/cpuid.h>
 #include <x86/utils/vga/console.h>
 #include <x86/utils/vga/ostream.h>
@@ -54,7 +54,7 @@ static const char *reset_color = "\033[0m";
 static const char *reset_screen = "\033c";
 
 
-extern "C" void _x86_i386_start(x86::BootInfo *boot_info)
+extern "C" void _i386_start(x86::BootInfo *boot_info)
 {
 	utils::VGA_OStream os;
 	os << "\033c";
@@ -113,12 +113,11 @@ extern "C" void _x86_i386_start(x86::BootInfo *boot_info)
 					auto& entry = pt->observe()[l];
 					if (!entry.is_present())
 						continue;
-					os << (int)(entry.get_page_addr() >> 12) << ':' << entry.is_global() << ' ';
+					os << (int)(entry.get_page_addr() >> 12) << ' ';
 				}
 			}
 		}
 	}
-	halt();
 
 	// auto e = map_identity_pages_preceding_kernel(pt_mem.ptr, );
 	// if (e != LocalErr::None) {
@@ -139,8 +138,6 @@ extern "C" void _x86_i386_start(x86::BootInfo *boot_info)
 	set_curr_pt_ptr((PhysAddr)page_table);
 	// TODO: check the cpuid features
 	enable_paging();
-
-	halt();
 
 	load_gdt();
 	setup_data_segments();
@@ -219,7 +216,6 @@ static LocalErr identity_map_pages(BootInfo& boot_info, PageTable *page_table, u
 		.phyaddr_beg = 0,
 		.phyaddr_end = (PhysAddr)__ldsym__kernel_image_start_lma,
 		.flags  = PageEntryFlags::Global
-			| PageEntryFlags::Supervisor
 			| PageEntryFlags::WriteAllowed
 			| PageEntryFlags::ExecuteDisabled,
 	};
@@ -234,7 +230,7 @@ static LocalErr identity_map_pages(BootInfo& boot_info, PageTable *page_table, u
 		map_info.linaddr_beg = section.lma_start;
 		map_info.phyaddr_beg = section.lma_start;
 		map_info.phyaddr_end = section.lma_start + section.size;
-		map_info.flags = PageEntryFlags::Global | PageEntryFlags::Supervisor;
+		map_info.flags = PageEntryFlags::Global;
 		map_info.flags |= kstd::switch_flag(PageEntryFlags::ExecuteDisabled,
 			(section.flags & kstd::SectionFlag::Executable) != kstd::SectionFlag::Executable);
 		map_info.flags |= kstd::switch_flag(PageEntryFlags::WriteAllowed,
