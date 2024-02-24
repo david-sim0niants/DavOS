@@ -96,24 +96,24 @@ extern "C" void _i386_start(x86::BootInfo *boot_info)
 		if (!entry.is_present())
 			continue;
 		PageTable_<3> *pt = (PageTable_<3> *)entry.get_page_table_addr();
-		os << pt << "\n\t";
+		os << pt << ' ' << entry.is_execute_disabled() << entry.is_write_allowed() << entry.is_global() << entry.is_supervisor() << "\n\t";
 		for (size_t j = 0; j < PageTable_<3>::nr_entries; ++j) {
 			auto& entry = pt->observe()[j];
 			if (!entry.is_present())
 				continue;
 			PageTable_<2> *pt = (PageTable_<2> *)entry.get_page_table_addr();
-			os << pt << "\n\t\t";
+			os << pt << ' ' << entry.is_execute_disabled() << entry.is_write_allowed() << entry.is_global() << entry.is_supervisor() << "\n\t\t";
 			for (size_t k = 0; k < PageTable_<2>::nr_entries; ++k) {
 				auto& entry = pt->observe()[k];
 				if (!entry.is_present())
 					continue;
 				PageTable_<1> *pt = (PageTable_<1> *)entry.get_page_table_addr();
-				os << pt << "\n\t\t\t";
+				os << pt << ' ' << entry.is_execute_disabled() << entry.is_write_allowed() << entry.is_global() << entry.is_supervisor() << "\n\t\t\t";
 				for (size_t l = 0; l < PageTable_<1>::nr_entries; ++l) {
 					auto& entry = pt->observe()[l];
 					if (!entry.is_present())
 						continue;
-					os << (int)(entry.get_page_addr() >> 12) << ' ';
+					os << (entry.get_page_addr() >> 12) << ' ';
 				}
 			}
 		}
@@ -138,6 +138,7 @@ extern "C" void _i386_start(x86::BootInfo *boot_info)
 	set_curr_pt_ptr((PhysAddr)page_table);
 	// TODO: check the cpuid features
 	enable_paging();
+	halt();
 
 	load_gdt();
 	setup_data_segments();
@@ -217,6 +218,7 @@ static LocalErr identity_map_pages(BootInfo& boot_info, PageTable *page_table, u
 		.phyaddr_end = (PhysAddr)__ldsym__kernel_image_start_lma,
 		.flags  = PageEntryFlags::Global
 			| PageEntryFlags::WriteAllowed
+			| PageEntryFlags::Supervisor
 			| PageEntryFlags::ExecuteDisabled,
 	};
 
@@ -230,11 +232,11 @@ static LocalErr identity_map_pages(BootInfo& boot_info, PageTable *page_table, u
 		map_info.linaddr_beg = section.lma_start;
 		map_info.phyaddr_beg = section.lma_start;
 		map_info.phyaddr_end = section.lma_start + section.size;
-		map_info.flags = PageEntryFlags::Global;
+		map_info.flags = PageEntryFlags::Global | PageEntryFlags::Supervisor;
 		map_info.flags |= kstd::switch_flag(PageEntryFlags::ExecuteDisabled,
-			(section.flags & kstd::SectionFlag::Executable) != kstd::SectionFlag::Executable);
+			!kstd::test_flag(section.flags, kstd::SectionFlag::Executable));
 		map_info.flags |= kstd::switch_flag(PageEntryFlags::WriteAllowed,
-			(section.flags & kstd::SectionFlag::Write) == kstd::SectionFlag::Write);
+			kstd::test_flag(section.flags, kstd::SectionFlag::Write));
 		e = map_pages__free_mem(boot_info, map_info, page_table, min_addr);
 		if (e != PageMapErr::None)
 			return LocalErr::IdentityMapFail;

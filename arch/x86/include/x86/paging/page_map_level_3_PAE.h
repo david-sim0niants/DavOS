@@ -44,7 +44,7 @@ template<int pml> inline bool PageTableEntry_<pml>::is_write_allowed() const
 
 template<int pml> inline bool PageTableEntry_<pml>::is_supervisor() const
 {
-	return !!(value & (1 << constants::pte_us_bit_loc))
+	return !(value & (1 << constants::pte_us_bit_loc))
 		|| (pml == max_page_map_level);
 }
 
@@ -81,12 +81,13 @@ template<int pml> inline bool PageTableEntry_<pml>::is_execute_disabled() const
 	if constexpr (pml > constants::max_pml_having_xd_bit)
 		return false;
 	else
-		return !!(value & (uint64_t(1) << constants::pte_xd_bit_loc));
+		return !!(value & (PageTableEntryValue(1) << constants::pte_xd_bit_loc));
 }
 
 template<int pml> inline void PageTableEntry_<pml>::set_present(bool present)
 {
-	value &= uint64_t(present) << constants::pte_p_bit_loc;
+	static constexpr auto mask = (PageTableEntryValue)1 << constants::pte_p_bit_loc;
+	value = (value & ~mask) | (mask * present);
 }
 
 template<int pml>
@@ -94,15 +95,17 @@ inline void PageTableEntry_<pml>::set_write_allowed(bool write_allowed)
 {
 	if constexpr (pml == 3)
 		return;
-	value |= uint64_t(write_allowed) << constants::pte_rw_bit_loc;
+	static constexpr auto mask = (PageTableEntryValue)1 << constants::pte_rw_bit_loc;
+	value = (value & ~mask) | (mask * write_allowed);
 }
 
 template<int pml>
-inline void PageTableEntry_<pml>::set_user_or_supervisor(bool supervisor)
+inline void PageTableEntry_<pml>::set_supervisor(bool supervisor)
 {
 	if constexpr (pml == 3)
 		return;
-	value |= uint64_t(supervisor) << constants::pte_us_bit_loc;
+	static constexpr auto mask = (PageTableEntryValue)1 << constants::pte_us_bit_loc;
+	value = (value & ~mask) | (mask * !supervisor);
 }
 
 template<int pml>
@@ -140,7 +143,8 @@ inline void PageTableEntry_<pml>::set_execute_disabled(bool execute_disable)
 {
 	if constexpr (pml > constants::max_pml_having_xd_bit)
 		return;
-	value |= uint64_t(execute_disable) << constants::pte_xd_bit_loc;
+	static constexpr auto mask = (PageTableEntryValue)1 << constants::pte_xd_bit_loc;
+	value = (value & ~mask) | (mask * execute_disable);
 }
 
 template<int pml> inline PhysAddr PageTableEntry_<pml>::get_page_table_addr() const

@@ -240,7 +240,7 @@ constexpr kstd::Maybe<PageSize> find_max_page_size(
 	return {};
 }
 
-/* Page table with highest page map level able to controll whole linear memory. */
+/* Page table with highest page map level able to control whole linear memory. */
 using PageTable = PageTable_<max_page_map_level>;
 using PageTableEntry = PageTableEntry_<max_page_map_level>;
 

@@ -36,7 +36,7 @@ template<int pml> inline bool PageTableEntry_<pml>::is_write_allowed() const
 
 template<int pml> inline bool PageTableEntry_<pml>::is_supervisor() const
 {
-	return !!(value & (1 << constants::pte_us_bit_loc));
+	return !(value & (1 << constants::pte_us_bit_loc));
 }
 
 template<int pml> inline bool PageTableEntry_<pml>::maps_page() const
@@ -61,19 +61,22 @@ template<int pml> inline bool PageTableEntry_<pml>::is_execute_disabled() const
 
 template<int pml> inline void PageTableEntry_<pml>::set_present(bool present)
 {
-	value &= uint64_t(present) << constants::pte_p_bit_loc;
+	static constexpr auto mask = (PageTableEntryValue)1 << constants::pte_p_bit_loc;
+	value = (value & ~mask) | (mask * present);
 }
 
 template<int pml>
 inline void PageTableEntry_<pml>::set_write_allowed(bool write_allowed)
 {
-	value |= uint64_t(write_allowed) << constants::pte_rw_bit_loc;
+	static constexpr auto mask = (PageTableEntryValue)1 << constants::pte_rw_bit_loc;
+	value = (value & ~mask) | (mask * write_allowed);
 }
 
 template<int pml>
-inline void PageTableEntry_<pml>::set_user_or_supervisor(bool supervisor)
+inline void PageTableEntry_<pml>::set_supervisor(bool supervisor)
 {
-	value |= uint64_t(supervisor) << constants::pte_us_bit_loc;
+	static constexpr auto mask = (PageTableEntryValue)1 << constants::pte_us_bit_loc;
+	value = (value & ~mask) | (mask * !supervisor);
 }
 
 template<int pml>

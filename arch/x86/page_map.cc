@@ -156,13 +156,13 @@ __FORCE_INLINE PageMapErr PageTable_<pml>::map_pages__const_ps(
 		while (info.phyaddr_end > info.phyaddr_beg && pte_idx < nr_entries) {
 			PageTableEntry_<pml>& entry = entries[pte_idx];
 
-			set_entry_flags<SetEntryFlagsMode::PageTable>(entry, info.flags);
-
 			// if there's already a page table mapped by the given entry, get it,
 			// otherwise create and get it
 			auto next_pt_or_err = get_or_map_page_table(entry, free_mem);
 			if (auto *e = kstd::try_get<PageMapErr>(next_pt_or_err))
 				return *e;
+
+			set_entry_flags<SetEntryFlagsMode::PageTable>(entry, info.flags);
 
 			auto *next_pt = kstd::get<PageTable_<pml - 1> *>(next_pt_or_err);
 			// "compile-time resolved recursive" call to the lower level page table
@@ -218,6 +218,9 @@ PageTable_<pml>::get_or_map_page_table(PageTableEntry_<pml>& entry, kstd::Memory
 		next_pt_addr = kstd::get<PhysAddr>(maybe_pt_ptr);
 		entry.map_page_table((PhysAddr)next_pt_addr);
 		entry.set_present(true);
+		entry.set_write_allowed(false);
+		entry.set_supervisor(true);
+		entry.set_execute_disabled(true);
 	}
 
 	return reinterpret_cast<PageTable_<pml - 1> *>(next_pt_addr);
@@ -254,10 +257,10 @@ static void set_entry_flags(PageTableEntry_<pml>& entry, PageEntryFlags flags)
 	using kstd::test_flag;
 
 	if constexpr (mode == SetEntryFlagsMode::Page) {
-		// in page mode set flags unconditionnaly
+		// in page mode set flags unconditionally
 		entry.set_write_allowed(
 				test_flag(flags, PageEntryFlags::WriteAllowed));
-		entry.set_user_or_supervisor(
+		entry.set_supervisor(
 				test_flag(flags, PageEntryFlags::Supervisor));
 		entry.set_execute_disabled(
 				test_flag(flags, PageEntryFlags::ExecuteDisabled));
@@ -265,7 +268,7 @@ static void set_entry_flags(PageTableEntry_<pml>& entry, PageEntryFlags flags)
 		// in page table mode set the most permissive flags
 		entry.set_write_allowed(entry.is_write_allowed() ||
 				test_flag(flags, PageEntryFlags::WriteAllowed));
-		entry.set_user_or_supervisor(entry.is_supervisor() &&
+		entry.set_supervisor(entry.is_supervisor() &&
 				test_flag(flags, PageEntryFlags::Supervisor));
 		entry.set_execute_disabled(entry.is_execute_disabled() &&
 				test_flag(flags, PageEntryFlags::ExecuteDisabled));

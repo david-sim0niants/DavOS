@@ -45,7 +45,7 @@ struct PageTableEntry_ {
 
 	void set_present(bool present);
 	void set_write_allowed(bool write_allowed);
-	void set_user_or_supervisor(bool supervisor);
+	void set_supervisor(bool supervisor);
 	void map_page(PhysAddr page_addr, bool global);
 	void map_page_table(PhysAddr pt_addr);
 	void set_execute_disabled(bool execute_disable);

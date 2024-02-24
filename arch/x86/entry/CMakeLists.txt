@@ -18,3 +18,4 @@ target_link_libraries(${TARGET_NAME} INTERFACE arch_x86_utils_vga klibc)
 
 
 set(TARGET_NAME kernel_x86_64_entry)
+
