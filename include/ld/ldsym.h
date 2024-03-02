@@ -18,6 +18,17 @@
 	. = ALIGN(SECTION_ALIGNMENT); \
 	SECTION_SIZE(name) = size;
 
+#define DEFINE_SECTION(name, ...) \
+	. = ALIGN(SECTION_ALIGNMENT); \
+	DEFINE_SECTION_START(name, . - __TOT_HOLE_SIZE, .) \
+	__VA_ARGS__ \
+	DEFINE_SECTION_SIZE(name, . - SECTION_START_VMA(name))
+
+#define SET_HOLE(size) \
+	PROVIDE(__TOT_HOLE_SIZE = size);
+#define ADD_HOLE(delta_size) \
+	__TOT_HOLE_SIZE += delta_size;
+
 #define SECTION_START_VMA(name) __KERNEL_##name##_START_VMA
 #define SECTION_START_LMA(name) __KERNEL_##name##_START_LMA
 #define SECTION_SIZE(name) __KERNEL_##name##_SIZE

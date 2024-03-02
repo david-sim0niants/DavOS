@@ -113,7 +113,7 @@ extern "C" void _i386_start(x86::BootInfo *boot_info)
 					auto& entry = pt->observe()[l];
 					if (!entry.is_present())
 						continue;
-					os << (entry.get_page_addr() >> 12) << ' ';
+					os << entry.is_execute_disabled() << entry.is_write_allowed() << entry.is_global() << entry.is_supervisor() << ' ';
 				}
 			}
 		}
@@ -138,11 +138,14 @@ extern "C" void _i386_start(x86::BootInfo *boot_info)
 	set_curr_pt_ptr((PhysAddr)page_table);
 	// TODO: check the cpuid features
 	enable_paging();
-	halt();
 
+	os << green_on_black << "\nPaging enabled!\n";
+
+	setup_gdt();
 	load_gdt();
 	setup_data_segments();
-	far_jmp_to_main();
+	halt();
+	// far_jmp_to_main();
 }
 
 
@@ -219,7 +222,7 @@ static LocalErr identity_map_pages(BootInfo& boot_info, PageTable *page_table, u
 		.flags  = PageEntryFlags::Global
 			| PageEntryFlags::WriteAllowed
 			| PageEntryFlags::Supervisor
-			| PageEntryFlags::ExecuteDisabled,
+			// | PageEntryFlags::ExecuteDisabled,
 	};
 
 	e = map_pages__free_mem(boot_info, map_info, page_table, min_addr);
@@ -233,8 +236,8 @@ static LocalErr identity_map_pages(BootInfo& boot_info, PageTable *page_table, u
 		map_info.phyaddr_beg = section.lma_start;
 		map_info.phyaddr_end = section.lma_start + section.size;
 		map_info.flags = PageEntryFlags::Global | PageEntryFlags::Supervisor;
-		map_info.flags |= kstd::switch_flag(PageEntryFlags::ExecuteDisabled,
-			!kstd::test_flag(section.flags, kstd::SectionFlag::Executable));
+		// map_info.flags |= kstd::switch_flag(PageEntryFlags::ExecuteDisabled,
+		// 	kstd::test_flag(section.flags, kstd::SectionFlag::Executable));
 		map_info.flags |= kstd::switch_flag(PageEntryFlags::WriteAllowed,
 			kstd::test_flag(section.flags, kstd::SectionFlag::Write));
 		e = map_pages__free_mem(boot_info, map_info, page_table, min_addr);
@@ -334,7 +337,7 @@ static LocalErr map_kernel_memory(const kernel::KernelMemLayout &mem_layout,
 }
 
 
-static __FORCE_INLINE void setup_data_segments()
+static inline void setup_data_segments()
 {
 	asm volatile (
 		"mov %[ds_offset], %%ax 	\n"
@@ -350,19 +353,19 @@ static __FORCE_INLINE void setup_data_segments()
 
 static __FORCE_INLINE void far_jmp_to_main()
 {
-	uint32_t kernel_main = (uint32_t)__ldsym__kernel_main;
-
-	asm volatile (
-		"ljmp %[cs_offset], $.Lhere 	\n"
-		".Lhere: 			\n"
-		"jmp *%[main] 			\n"
-		::
-		[cs_offset]"i"(sizeof(GDT_Entry)),
-		[main]"r"(kernel_main)
-		:
-		"memory"
-	);
-	__builtin_unreachable();
+	// LineAddr kernel_main = (LineAddr)__ldsym__kernel_main;
+	//
+	// asm volatile (
+	// 	"ljmp %[cs_offset], $.Lhere 	\n"
+	// 	".Lhere: 			\n"
+	// 	"jmp *%[main] 			\n"
+	// 	::
+	// 	[cs_offset]"i"(sizeof(GDT_Entry)),
+	// 	[main]"r"(kernel_main)
+	// 	:
+	// 	"memory"
+	// );
+	// __builtin_unreachable();
 }
 
 

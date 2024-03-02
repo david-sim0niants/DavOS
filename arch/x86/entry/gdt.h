@@ -48,6 +48,7 @@ struct GDT_Ptr {
 
 extern GDT_Ptr gdt_ptr;
 
+void setup_gdt();
 
 __FORCE_INLINE void load_gdt()
 {
