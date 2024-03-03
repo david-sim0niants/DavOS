@@ -21,13 +21,15 @@
 #include <kstd/io.h>
 #include <kstd/algorithm.h>
 #include <kstd/memory.h>
+#include <kstd/array.h>
 
 #include "gdt.h"
+
 
 namespace x86 {
 
 enum class LocalErr {
-	None = 0, IdentityMapFail, KernelMapFail, PreKernelIdentityMapFail,
+	None = 0, IdentityMapFail, KernelMapFail,
 };
 
 static void print_vendor_info(ArchInfo &arch_info, utils::VGA_OStream& os);
@@ -38,14 +40,11 @@ static kstd::MemoryRange find_free_memory(const BootInfo& boot_info,
 static PageMapErr map_pages__free_mem(BootInfo& boot_info, PageMappingInfo& map_info,
 		PageTable *page_table, uintptr_t& min_addr);
 static LocalErr identity_map_pages(BootInfo& boot_info, PageTable *page_table, uintptr_t& min_addr);
-static LocalErr map_identity_pages_preceding_kernel(kstd::Byte *&map_location,
-		PageTable *page_table);
-
-static LocalErr map_kernel_memory(const kernel::KernelMemLayout& mem_layout,
-		kstd::Byte *&map_location, PageTable *page_table);
+static LocalErr map_kernel_memory(BootInfo& boot_info, PageTable *page_table, uintptr_t& min_addr);
 
 static void setup_data_segments();
-static void far_jmp_to_main();
+
+static inline void next_entry(BootInfo *boot_info);
 
 
 static const char *red_on_black = "\033[5m";
@@ -81,8 +80,9 @@ extern "C" void _i386_start(x86::BootInfo *boot_info)
 	kstd::MemoryRange pt_mem = find_free_memory(*boot_info, min_addr, PageTable::size_shift);
 	PageTable *page_table = reinterpret_cast<PageTable *>(pt_mem.beg);
 	new (page_table) PageTable();
-	os << page_table << '\n';
 	min_addr += PageTable::size;
+
+	os << "Current page table pointer: " << page_table << '\n';
 
 	LocalErr e;
 	e = identity_map_pages(*boot_info, page_table, min_addr);
@@ -91,61 +91,22 @@ extern "C" void _i386_start(x86::BootInfo *boot_info)
 		halt();
 	}
 
-	for (size_t i = 0; i < PageTable::nr_entries; ++i) {
-		auto& entry = page_table->observe()[i];
-		if (!entry.is_present())
-			continue;
-		PageTable_<3> *pt = (PageTable_<3> *)entry.get_page_table_addr();
-		os << pt << ' ' << entry.is_execute_disabled() << entry.is_write_allowed() << entry.is_global() << entry.is_supervisor() << "\n\t";
-		for (size_t j = 0; j < PageTable_<3>::nr_entries; ++j) {
-			auto& entry = pt->observe()[j];
-			if (!entry.is_present())
-				continue;
-			PageTable_<2> *pt = (PageTable_<2> *)entry.get_page_table_addr();
-			os << pt << ' ' << entry.is_execute_disabled() << entry.is_write_allowed() << entry.is_global() << entry.is_supervisor() << "\n\t\t";
-			for (size_t k = 0; k < PageTable_<2>::nr_entries; ++k) {
-				auto& entry = pt->observe()[k];
-				if (!entry.is_present())
-					continue;
-				PageTable_<1> *pt = (PageTable_<1> *)entry.get_page_table_addr();
-				os << pt << ' ' << entry.is_execute_disabled() << entry.is_write_allowed() << entry.is_global() << entry.is_supervisor() << "\n\t\t\t";
-				for (size_t l = 0; l < PageTable_<1>::nr_entries; ++l) {
-					auto& entry = pt->observe()[l];
-					if (!entry.is_present())
-						continue;
-					os << entry.is_execute_disabled() << entry.is_write_allowed() << entry.is_global() << entry.is_supervisor() << ' ';
-				}
-			}
-		}
-	}
-
-	// auto e = map_identity_pages_preceding_kernel(pt_mem.ptr, );
-	// if (e != LocalErr::None) {
-	// 	os 	<< red_on_black
-	// 		<< "Failed to identity map pre kernel start memory."
-	// 		<< reset_color;
-	// 	halt();
-	// }
-
 	kernel::KernelMemLayout mem_layout = kernel::get_mem_layout();
 
-	// e = map_kernel_memory(kernel::get_mem_layout(), map_location, page_table);
-	// if (e != LocalErr::None) {
-	// 	os << red_on_black << "Failed to map kernel memory.\n" << reset_color;
-	// 	halt();
-	// }
+	e = map_kernel_memory(*boot_info, page_table, min_addr);
+	if (e != LocalErr::None) {
+		os << red_on_black << "Failed to map kernel memory.\n" << reset_color;
+		halt();
+	}
 
 	set_curr_pt_ptr((PhysAddr)page_table);
 	// TODO: check the cpuid features
 	enable_paging();
 
-	os << green_on_black << "\nPaging enabled!\n";
+	os << green_on_black << "Paging enabled!\n";
+	next_entry(boot_info);
 
-	setup_gdt();
-	load_gdt();
-	setup_data_segments();
 	halt();
-	// far_jmp_to_main();
 }
 
 
@@ -170,6 +131,7 @@ static void print_vendor_info(ArchInfo& arch_info, utils::VGA_OStream& os)
 	os.write(arch_info.vendor_id, vendor_id_len);
 	os << '\n';
 }
+
 
 static kstd::MemoryRange find_free_memory(const BootInfo& boot_info,
 		uintptr_t min_addr, unsigned int alignment)
@@ -218,7 +180,7 @@ static LocalErr identity_map_pages(BootInfo& boot_info, PageTable *page_table, u
 	map_info = {
 		.linaddr_beg = 0,
 		.phyaddr_beg = 0,
-		.phyaddr_end = (PhysAddr)__ldsym__kernel_image_start_lma,
+		.phyaddr_end = __ldsym__kernel_image_start_lma,
 		.flags  = PageEntryFlags::Global
 			| PageEntryFlags::WriteAllowed
 			| PageEntryFlags::Supervisor
@@ -231,7 +193,7 @@ static LocalErr identity_map_pages(BootInfo& boot_info, PageTable *page_table, u
 
 	auto sections = kernel_image::get_sections();
 	for (size_t i = 0 ; i < sections.size(); ++i) {
-		const kstd::Section& section = sections[i];
+		const kernel_image::Section& section = sections[i];
 		map_info.linaddr_beg = section.lma_start;
 		map_info.phyaddr_beg = section.lma_start;
 		map_info.phyaddr_end = section.lma_start + section.size;
@@ -248,91 +210,31 @@ static LocalErr identity_map_pages(BootInfo& boot_info, PageTable *page_table, u
 	return LocalErr::None;
 }
 
-static LocalErr map_identity_pages_preceding_kernel(kstd::Byte *&map_location,
-		PageTable *page_table)
+static LocalErr map_kernel_memory(BootInfo& boot_info, PageTable *page_table, uintptr_t& min_addr)
 {
-	PageMappingInfo map_info = {
-		.linaddr_beg = 0,
-		.phyaddr_beg = 0,
-		.phyaddr_end = (PhysAddr)__ldsym__kernel_text_start_lma,
-		.flags  = PageEntryFlags::Global
-			| PageEntryFlags::Supervisor
-			| PageEntryFlags::WriteAllowed,
-	};
-
-	kstd::MemoryRange free_mem = {map_location, map_location + 0x10000000};
-
-	auto e = page_table->map_memory(map_info, free_mem);
-	if (e != PageMapErr::None)
-		return LocalErr::PreKernelIdentityMapFail;
-
-	return LocalErr::None;
-}
-
-static LocalErr map_kernel_memory(const kernel::KernelMemLayout &mem_layout,
-	kstd::Byte *&map_location, PageTable *page_table)
-{
-	PageMapErr e;
-
-	PageMappingInfo map_info = {
-		.linaddr_beg = (LineAddr)mem_layout.text.start_vma,
-		.phyaddr_beg = (PhysAddr)mem_layout.text.start_lma,
-		.phyaddr_end = (PhysAddr)(mem_layout.text.start_lma)
-				+ mem_layout.text.size,
-		.flags  = PageEntryFlags::Global
-			| PageEntryFlags::Supervisor
-	};
-
-	kstd::MemoryRange free_mem = {map_location, map_location + 0x10000000};
-
-	e = page_table->map_memory(map_info, free_mem);
-	if (e != PageMapErr::None)
-		return LocalErr::KernelMapFail;
-
-	map_info = {
-		.linaddr_beg = (LineAddr)mem_layout.bss.start_vma,
-		.phyaddr_beg = (PhysAddr)mem_layout.bss.start_lma,
-		.phyaddr_end = (PhysAddr)(mem_layout.bss.start_lma)
-				+ mem_layout.bss.size,
-		.flags  = PageEntryFlags::Global
-			| PageEntryFlags::Supervisor
-			| PageEntryFlags::WriteAllowed
-			| PageEntryFlags::ExecuteDisabled,
-	};
-
-	e = page_table->map_memory(map_info, free_mem);
-	if (e != PageMapErr::None)
-		return LocalErr::KernelMapFail;
-
-	map_info = {
-		.linaddr_beg = (LineAddr)mem_layout.rodata.start_vma,
-		.phyaddr_beg = (PhysAddr)mem_layout.rodata.start_lma,
-		.phyaddr_end = (PhysAddr)(mem_layout.rodata.start_lma)
-				+ mem_layout.rodata.size,
-		.flags  = PageEntryFlags::Global
-			| PageEntryFlags::Supervisor
-			| PageEntryFlags::ExecuteDisabled,
-	};
-
-	e = page_table->map_memory(map_info, free_mem);
-	if (e != PageMapErr::None)
-		return LocalErr::KernelMapFail;
-
-	map_info = {
-		.linaddr_beg = (LineAddr)mem_layout.data.start_vma,
-		.phyaddr_beg = (PhysAddr)mem_layout.data.start_lma,
-		.phyaddr_end = (PhysAddr)(mem_layout.data.start_lma)
-				+ mem_layout.data.size,
-		.flags  = PageEntryFlags::Global
-			| PageEntryFlags::Supervisor
-			| PageEntryFlags::WriteAllowed
-			| PageEntryFlags::ExecuteDisabled,
-	};
-
-	e = page_table->map_memory(map_info, free_mem);
-	if (e != PageMapErr::None)
-		return LocalErr::KernelMapFail;
-
+	kstd::Array kernel_section_names = {".text", ".bss", ".rodata", ".data"};
+	auto sections = kernel_image::get_sections();
+	for (size_t i = 0 ; i < sections.size(); ++i) {
+		const kernel_image::Section& section = sections[i];
+		size_t j;
+		for (j = 0; j < kernel_section_names.size()
+				&& strcmp(kernel_section_names[j], section.name); ++j);
+		if (j == kernel_section_names.size())
+			continue;
+		PageMappingInfo map_info {
+			.linaddr_beg = page_fit_linear_addr(section.vma_start),
+			.phyaddr_beg = section.lma_start,
+			.phyaddr_end = section.lma_start + section.size,
+			.flags = PageEntryFlags::Global | PageEntryFlags::Supervisor
+				| kstd::switch_flag(PageEntryFlags::WriteAllowed,
+				kstd::test_flag(section.flags, kstd::SectionFlag::Write))
+				// | kstd::switch_flag(PageEntryFlags::ExecuteDisabled,
+				// 	kstd::test_flag(section.flags, kstd::SectionFlag::Executable)),
+		};
+		PageMapErr e = map_pages__free_mem(boot_info, map_info, page_table, min_addr);
+		if (e != PageMapErr::None)
+			return LocalErr::KernelMapFail;
+	}
 	return LocalErr::None;
 }
 
@@ -351,25 +253,37 @@ static inline void setup_data_segments()
 }
 
 
-static __FORCE_INLINE void far_jmp_to_main()
+#if CONFIG_ARCH == ARCH_x86_64
+static inline void next_entry(BootInfo *boot_info)
 {
-	// LineAddr kernel_main = (LineAddr)__ldsym__kernel_main;
-	//
-	// asm volatile (
-	// 	"ljmp %[cs_offset], $.Lhere 	\n"
-	// 	".Lhere: 			\n"
-	// 	"jmp *%[main] 			\n"
-	// 	::
-	// 	[cs_offset]"i"(sizeof(GDT_Entry)),
-	// 	[main]"r"(kernel_main)
-	// 	:
-	// 	"memory"
-	// );
-	// __builtin_unreachable();
+	setup_gdt();
+	load_gdt();
+	setup_data_segments();
+	asm volatile (
+		"ljmp %[cs_offset], $.Lhere		\n"
+	".Lhere: 					\n"
+		"mov %[stack_top], %%esp 	\n"
+		"mov %[boot_info], %%edi 		\n"
+		"jmp *%[x86_64_entry]"
+		::
+		[boot_info]"r"(boot_info),
+		[stack_top]"r"((uint32_t)__ldsym__stack_top),
+		[cs_offset]"i"(sizeof(GDT_Entry)),
+		[x86_64_entry]"r"((uint32_t)__ldsym__kernel_x86_64_entry)
+	);
 }
+#else
+static inline void next_entry(BootInfo *boot_info)
+{
+	asm volatile (
+		"mov (__ldsym__stack_top), %esp 			\n"
+	);
+	reinterpret_cast<void (*)(arch::BootInfo *boot_info)>(boot_info);
+}
+#endif
 
 
-static void __attribute__((section(".fake_main_text"))) fake_main()
+static void __attribute__((section(".fake_entry"))) fake_entry()
 {
 	halt();
 }

@@ -35,6 +35,14 @@ SECTIONS
 	)
 
 	DEFINE_SECTION (
+		I386_DATA,
+		.i386.data : ALIGN(4K)
+		{
+			KEEP(*(.i386.data))
+		}
+	)
+
+	DEFINE_SECTION (
 		LDSYM,
 		.ldsym : ALIGN(4K)
 		{
@@ -52,17 +60,33 @@ SECTIONS
 			DEFINE_LDSYM(kernel_i386_rodata_start_lma, 	SECTION_START_LMA(I386_RODATA))
 			DEFINE_LDSYM(kernel_i386_rodata_size, 	SECTION_SIZE(I386_RODATA))
 
-			DEFINE_LDSYM(kernel_ldsym_start_vma, 	SECTION_START_VMA(LDSYM))
-			DEFINE_LDSYM(kernel_ldsym_start_lma, 	SECTION_START_LMA(LDSYM))
-			DEFINE_LDSYM(kernel_ldsym_size, 	SECTION_SIZE(LDSYM))
-
 			DEFINE_LDSYM(kernel_i386_data_start_vma,SECTION_START_VMA(I386_DATA))
 			DEFINE_LDSYM(kernel_i386_data_start_lma,SECTION_START_LMA(I386_DATA))
 			DEFINE_LDSYM(kernel_i386_data_size, 	SECTION_SIZE(I386_DATA))
 
+			DEFINE_LDSYM(kernel_ldsym_start_vma, 	SECTION_START_VMA(LDSYM))
+			DEFINE_LDSYM(kernel_ldsym_start_lma, 	SECTION_START_LMA(LDSYM))
+			DEFINE_LDSYM(kernel_ldsym_size, 	SECTION_SIZE(LDSYM))
+
 			DEFINE_LDSYM(kernel_stack_start_vma, 	SECTION_START_VMA(STACK))
 			DEFINE_LDSYM(kernel_stack_start_lma, 	SECTION_START_LMA(STACK))
 			DEFINE_LDSYM(kernel_stack_size, 	SECTION_SIZE(STACK))
+
+#if CONFIG_ARCH == ARCH_x86_64
+			DEFINE_LDSYM(kernel_x86_64_text_start_vma, 	SECTION_START_VMA(x86_64_TEXT))
+			DEFINE_LDSYM(kernel_x86_64_text_start_lma, 	SECTION_START_LMA(x86_64_TEXT))
+			DEFINE_LDSYM(kernel_x86_64_text_size, 		SECTION_SIZE(x86_64_TEXT))
+
+			DEFINE_LDSYM(kernel_x86_64_rodata_start_vma, 	SECTION_START_VMA(x86_64_RODATA))
+			DEFINE_LDSYM(kernel_x86_64_rodata_start_lma, 	SECTION_START_LMA(x86_64_RODATA))
+			DEFINE_LDSYM(kernel_x86_64_rodata_size, 	SECTION_SIZE(x86_64_RODATA))
+
+			DEFINE_LDSYM(kernel_x86_64_data_start_vma, 	SECTION_START_VMA(x86_64_DATA))
+			DEFINE_LDSYM(kernel_x86_64_data_start_lma, 	SECTION_START_LMA(x86_64_DATA))
+			DEFINE_LDSYM(kernel_x86_64_data_size, 		SECTION_SIZE(x86_64_DATA))
+
+			DEFINE_LDSYM(kernel_x86_64_entry, 		_x86_64_entry)
+#endif
 
 			DEFINE_LDSYM(kernel_text_start_vma, 	SECTION_START_VMA(TEXT))
 			DEFINE_LDSYM(kernel_text_start_lma, 	SECTION_START_LMA(TEXT))
@@ -84,13 +108,31 @@ SECTIONS
 		}
 	)
 
+#if CONFIG_ARCH == ARCH_x86_64
 	DEFINE_SECTION (
-		I386_DATA,
-		.i386.data : ALIGN(4K)
+		x86_64_TEXT,
+		.x86_64.text : ALIGN(4K)
 		{
-			KEEP(*(.i386.data))
+			KEEP(*(.x86_64.text))
 		}
 	)
+
+	DEFINE_SECTION (
+		x86_64_RODATA,
+		.x86_64.rodata : ALIGN(4K)
+		{
+			KEEP(*(.x86_64.rodata))
+		}
+	)
+
+	DEFINE_SECTION (
+		x86_64_DATA,
+		.x86_64.data : ALIGN(4K)
+		{
+			KEEP(*(.x86_64.data))
+		}
+	)
+#endif
 
 	DEFINE_SECTION (
 		STACK,

@@ -95,8 +95,12 @@ add_custom_command(OUTPUT ${DUMPED_SECTION_FILES}
 	VERBATIM)
 
 get_null_file(cpp)
-add_library(${TARGET_NAME} STATIC ${NULL_FILE} ${DUMPED_SECTION_FILES})
+add_library(${TARGET_NAME} INTERFACE)
+target_sources(${TARGET_NAME} INTERFACE ${NULL_FILE} ${DUMPED_SECTION_FILES})
 add_dependencies(${TARGET_NAME} kernel_entry_i386)
+if (${CONFIG_ARCH} STREQUAL x86_64)
+	target_link_libraries(${TARGET_NAME} INTERFACE kernel_entry_x86_64)
+endif ()
 
 
 # Build the final kernel image

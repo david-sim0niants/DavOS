@@ -7,11 +7,8 @@
 namespace kstd {
 
 template<typename T, size_t N>
-class Array {
-	T arr[N] {};
-public:
-	Array() = default;
-	explicit Array(const T *data);
+struct Array {
+	T arr[N];
 
 	T *data();
 	const T *data() const;
@@ -21,12 +18,9 @@ public:
 	constexpr const T& operator[](size_t i) const;
 };
 
-template<typename T, size_t N>
-Array<T, N>::Array(const T *data)
-{
-	for (size_t i = 0; i < N; ++i)
-		arr[i] = data[i];
-}
+template <typename T, typename... Args>
+Array(T, Args...) -> Array<T, sizeof...(Args) + 1>;
+
 
 template<typename T, size_t N>
 T *Array<T, N>::data()

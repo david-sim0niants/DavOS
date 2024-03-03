@@ -17,11 +17,12 @@ enum class SectionFlag {
 };
 KSTD_DEFINE_ENUM_LOGIC_BITWISE_OPERATORS(SectionFlag);
 
+template <typename VMAType = uintptr_t, typename LMAType = uintptr_t, typename SizeType = size_t>
 struct Section {
 	const char *name;
-	uintptr_t vma_start;
-	uintptr_t lma_start;
-	size_t size;
+	VMAType vma_start;
+	LMAType lma_start;
+	SizeType size;
 	SectionFlag flags;
 };
 

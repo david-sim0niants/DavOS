@@ -7,14 +7,17 @@
 extern "C" {
 #endif
 
-extern void *memcpy(void *dst, const void *src, size_t cnt);
-extern void *memmove(void *dst, const void *src, size_t cnt);
-extern void *memset(void *dst, const int val, size_t cnt);
+void *memcpy(void *dst, const void *src, size_t cnt);
+void *memmove(void *dst, const void *src, size_t cnt);
+void *memset(void *dst, const int val, size_t cnt);
 
-extern size_t strlen(const char *str);
-extern size_t strnlen(const char *str, size_t n);
-extern char *strcpy(char *dst, const char *src);
-extern char *strncpy(char *dst, const char *src, size_t n);
+size_t strlen(const char *str);
+size_t strnlen(const char *str, size_t n);
+char *strcpy(char *dst, const char *src);
+char *strncpy(char *dst, const char *src, size_t n);
+
+int strcmp(const char *s1, const char *s2);
+int strncmp(const char *s1, const char *s2, size_t n);
 
 #ifdef __cplusplus
 }
@@ -28,5 +31,8 @@ extern char *strncpy(char *dst, const char *src, size_t n);
 #define strnlen(__str) __builtin_strnlen(__str)
 #define strcpy(__dst, __src) __builtin_strcpy(__dst, __src)
 #define strncpy(__dst, __src, __n) __builtin_strncpy(__dst, __src, __n)
+
+#define strcmp(__s1, __s2) __builtin_strcmp(__s1, __s2)
+#define strncmp(__s1, __s2, __n) __builtin_strncmp(__s1, __s2, __n)
 
 #endif

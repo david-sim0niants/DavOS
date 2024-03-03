@@ -21,25 +21,32 @@ extern "C" {
 /* Link defined symbol declarations go here. */
 
 DECLARE_LDSYM(stack_top);
+
 DECLARE_LDSYM(kernel_image_start_vma);
 DECLARE_LDSYM(kernel_image_start_lma);
 DECLARE_LDSYM(kernel_image_end_vma);
 DECLARE_LDSYM(kernel_image_end_lma);
+
 DECLARE_LDSYM(kernel_ldsym_start_vma);
 DECLARE_LDSYM(kernel_ldsym_start_lma);
 DECLARE_LDSYM(kernel_ldsym_size);
+
 DECLARE_LDSYM(kernel_text_start_vma);
 DECLARE_LDSYM(kernel_text_start_lma);
 DECLARE_LDSYM(kernel_text_size);
+
 DECLARE_LDSYM(kernel_bss_start_vma);
 DECLARE_LDSYM(kernel_bss_start_lma);
 DECLARE_LDSYM(kernel_bss_size);
+
 DECLARE_LDSYM(kernel_rodata_start_vma);
 DECLARE_LDSYM(kernel_rodata_start_lma);
 DECLARE_LDSYM(kernel_rodata_size);
+
 DECLARE_LDSYM(kernel_data_start_vma);
 DECLARE_LDSYM(kernel_data_start_lma);
 DECLARE_LDSYM(kernel_data_size);
+
 DECLARE_LDSYM(kernel_main);
 
 #ifdef __cplusplus

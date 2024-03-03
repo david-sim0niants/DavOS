@@ -1,6 +1,8 @@
 #include <x86/boot/multiboot2/multiboot_info.h>
 #include <x86/boot/setup.h>
 #include <x86/entry/i386_entry.h>
+#include <x86/utils/vga/ostream.h>
+#include <x86/system.h>
 
 #include <ldsym.h>
 
@@ -69,9 +71,10 @@ extern "C" int _mb2_start(void *mb_info_tags_struct)
 	_i386_start(boot_info);
 
 	// returning from _i386_start is a clear bug
+	utils::VGA_OStream os;
+	os << "\033[5m" << "MULTIBOOT2 ENTRY ERROR: _i386_start entry returned.";
+	x86::halt();
 	__builtin_unreachable();
-
-	return 0;
 }
 
 static uintptr_t find_free_memory(MultibootInfo::MMap& mmap,

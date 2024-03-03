@@ -244,6 +244,11 @@ constexpr kstd::Maybe<PageSize> find_max_page_size(
 using PageTable = PageTable_<max_page_map_level>;
 using PageTableEntry = PageTableEntry_<max_page_map_level>;
 
+static constexpr LineAddr page_fit_linear_addr(LineAddr addr)
+{
+	return addr & (PageTable::controlled_mem - 1);
+}
+
 }
 
 #endif
