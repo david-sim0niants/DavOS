@@ -91,8 +91,6 @@ extern "C" void _i386_start(x86::BootInfo *boot_info)
 		halt();
 	}
 
-	kernel::KernelMemLayout mem_layout = kernel::get_mem_layout();
-
 	e = map_kernel_memory(*boot_info, page_table, min_addr);
 	if (e != LocalErr::None) {
 		os << red_on_black << "Failed to map kernel memory.\n" << reset_color;
@@ -106,6 +104,7 @@ extern "C" void _i386_start(x86::BootInfo *boot_info)
 	os << green_on_black << "Paging enabled!\n";
 	next_entry(boot_info);
 
+	os << red_on_black << "i386 ENTRY ERROR: return from next_entry.\n";
 	halt();
 }
 
@@ -197,11 +196,11 @@ static LocalErr identity_map_pages(BootInfo& boot_info, PageTable *page_table, u
 		map_info.linaddr_beg = section.lma_start;
 		map_info.phyaddr_beg = section.lma_start;
 		map_info.phyaddr_end = section.lma_start + section.size;
-		map_info.flags = PageEntryFlags::Global | PageEntryFlags::Supervisor;
-		// map_info.flags |= kstd::switch_flag(PageEntryFlags::ExecuteDisabled,
-		// 	kstd::test_flag(section.flags, kstd::SectionFlag::Executable));
-		map_info.flags |= kstd::switch_flag(PageEntryFlags::WriteAllowed,
-			kstd::test_flag(section.flags, kstd::SectionFlag::Write));
+		map_info.flags = PageEntryFlags::Global | PageEntryFlags::Supervisor
+			| kstd::switch_flag(PageEntryFlags::WriteAllowed,
+				kstd::test_flag(section.flags, kstd::SectionFlag::Write))
+			| kstd::switch_flag(PageEntryFlags::ExecuteDisabled,
+				!kstd::test_flag(section.flags, kstd::SectionFlag::Executable));
 		e = map_pages__free_mem(boot_info, map_info, page_table, min_addr);
 		if (e != PageMapErr::None)
 			return LocalErr::IdentityMapFail;
@@ -227,9 +226,9 @@ static LocalErr map_kernel_memory(BootInfo& boot_info, PageTable *page_table, ui
 			.phyaddr_end = section.lma_start + section.size,
 			.flags = PageEntryFlags::Global | PageEntryFlags::Supervisor
 				| kstd::switch_flag(PageEntryFlags::WriteAllowed,
-				kstd::test_flag(section.flags, kstd::SectionFlag::Write))
-				// | kstd::switch_flag(PageEntryFlags::ExecuteDisabled,
-				// 	kstd::test_flag(section.flags, kstd::SectionFlag::Executable)),
+					kstd::test_flag(section.flags, kstd::SectionFlag::Write))
+				| kstd::switch_flag(PageEntryFlags::ExecuteDisabled,
+					!kstd::test_flag(section.flags, kstd::SectionFlag::Executable)),
 		};
 		PageMapErr e = map_pages__free_mem(boot_info, map_info, page_table, min_addr);
 		if (e != PageMapErr::None)

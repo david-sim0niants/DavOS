@@ -40,6 +40,7 @@ __FORCE_INLINE void enable_paging_level_3_PAE()
 
 	auto efer_val = read_efer_flags();
 	efer_val &= ~EFER_Flags::LME;
+	efer_val |= EFER_Flags::NXE;
 	write_efer_flags(efer_val);
 
 	enable_paging__common();
@@ -53,7 +54,7 @@ __FORCE_INLINE void enable_paging_level_4()
 	write_cr4_flags(cr4_val);
 
 	auto efer_val = read_efer_flags();
-	efer_val |= EFER_Flags::LME;
+	efer_val |= EFER_Flags::LME | EFER_Flags::NXE;
 	write_efer_flags(efer_val);
 
 	enable_paging__common();
@@ -66,7 +67,7 @@ __FORCE_INLINE void enable_paging_level_5()
 	write_cr4_flags(cr4_val);
 
 	auto efer_val = read_efer_flags();
-	efer_val |= EFER_Flags::LME;
+	efer_val |= EFER_Flags::LME | EFER_Flags::NXE;
 	write_efer_flags(efer_val);
 
 	enable_paging__common();

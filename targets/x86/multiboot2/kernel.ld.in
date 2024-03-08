@@ -92,6 +92,10 @@ SECTIONS
 			DEFINE_LDSYM(kernel_text_start_lma, 	SECTION_START_LMA(TEXT))
 			DEFINE_LDSYM(kernel_text_size, 		SECTION_SIZE(TEXT))
 
+			DEFINE_LDSYM(kernel_bss_start_vma, 	SECTION_START_VMA(BSS))
+			DEFINE_LDSYM(kernel_bss_start_lma, 	SECTION_START_LMA(BSS))
+			DEFINE_LDSYM(kernel_bss_size, 		SECTION_SIZE(BSS))
+
 			DEFINE_LDSYM(kernel_rodata_start_vma, 	SECTION_START_VMA(RODATA))
 			DEFINE_LDSYM(kernel_rodata_start_lma, 	SECTION_START_LMA(RODATA))
 			DEFINE_LDSYM(kernel_rodata_size, 	SECTION_SIZE(RODATA))
@@ -99,10 +103,6 @@ SECTIONS
 			DEFINE_LDSYM(kernel_data_start_vma, 	SECTION_START_VMA(DATA))
 			DEFINE_LDSYM(kernel_data_start_lma, 	SECTION_START_LMA(DATA))
 			DEFINE_LDSYM(kernel_data_size, 		SECTION_SIZE(DATA))
-
-			DEFINE_LDSYM(kernel_bss_start_vma, 	SECTION_START_VMA(BSS))
-			DEFINE_LDSYM(kernel_bss_start_lma, 	SECTION_START_LMA(BSS))
-			DEFINE_LDSYM(kernel_bss_size, 		SECTION_SIZE(BSS))
 
 			DEFINE_LDSYM(kernel_main, 		main)
 		}
