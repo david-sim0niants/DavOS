@@ -12,7 +12,7 @@ function(switch_mode MODE)
 	if (MODE STREQUAL KERNEL)
 		# Set compiler flags for kernel code
 		set(CMAKE_ASM_FLAGS "${DEFAULT_CMAKE_ASM_FLAGS} -x assembler-with-cpp")
-		set(COMMON_C_CXX_FLAGS "-no-pie -fno-pic -fno-ident -ffreestanding -fno-exceptions -nostdlib -nostdinc -fno-stack-protector")
+		set(COMMON_C_CXX_FLAGS "-no-pie -fno-pic -fno-ident -ffreestanding -fno-exceptions -nostdlib -nostdinc -fno-stack-protector -nostartfiles")
 
 		set(CMAKE_C_FLAGS   "${DEFAULT_CMAKE_C_FLAGS} ${COMMON_C_CXX_FLAGS}")
 		set(CMAKE_CXX_FLAGS "${DEFAULT_CMAKE_CXX_FLAGS} ${COMMON_C_CXX_FLAGS} -fno-rtti")

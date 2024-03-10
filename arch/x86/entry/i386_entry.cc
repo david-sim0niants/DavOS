@@ -15,8 +15,6 @@
 #include <x86/system.h>
 #include <x86/boot/setup.h>
 
-#include <kernel/mem_layout.h>
-
 #include <kstd/new.h>
 #include <kstd/io.h>
 #include <kstd/algorithm.h>
@@ -183,7 +181,7 @@ static LocalErr identity_map_pages(BootInfo& boot_info, PageTable *page_table, u
 		.flags  = PageEntryFlags::Global
 			| PageEntryFlags::WriteAllowed
 			| PageEntryFlags::Supervisor
-			// | PageEntryFlags::ExecuteDisabled,
+			| PageEntryFlags::ExecuteDisabled,
 	};
 
 	e = map_pages__free_mem(boot_info, map_info, page_table, min_addr);
@@ -211,15 +209,10 @@ static LocalErr identity_map_pages(BootInfo& boot_info, PageTable *page_table, u
 
 static LocalErr map_kernel_memory(BootInfo& boot_info, PageTable *page_table, uintptr_t& min_addr)
 {
-	kstd::Array kernel_section_names = {".text", ".bss", ".rodata", ".data"};
-	auto sections = kernel_image::get_sections();
+	utils::VGA_OStream os;
+	auto sections = kernel_image::get_main_sections();
 	for (size_t i = 0 ; i < sections.size(); ++i) {
 		const kernel_image::Section& section = sections[i];
-		size_t j;
-		for (j = 0; j < kernel_section_names.size()
-				&& strcmp(kernel_section_names[j], section.name); ++j);
-		if (j == kernel_section_names.size())
-			continue;
 		PageMappingInfo map_info {
 			.linaddr_beg = page_fit_linear_addr(section.vma_start),
 			.phyaddr_beg = section.lma_start,
@@ -266,7 +259,7 @@ static inline void next_entry(BootInfo *boot_info)
 		"jmp *%[x86_64_entry]"
 		::
 		[boot_info]"r"(boot_info),
-		[stack_top]"r"((uint32_t)__ldsym__stack_top),
+		[stack_top]"r"((uint32_t)__ldsym__kernel_stack_top),
 		[cs_offset]"i"(sizeof(GDT_Entry)),
 		[x86_64_entry]"r"((uint32_t)__ldsym__kernel_x86_64_entry)
 	);

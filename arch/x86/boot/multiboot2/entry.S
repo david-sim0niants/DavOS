@@ -28,9 +28,7 @@
 .section .text_entry, "ax", @progbits
 
 #include <config.h>
-#include <ldsym.h>
-
-.globl x86_setup
+.globl __ldsym__kernel_stack_top
 
 .type _start, @function
 .globl _start
@@ -40,7 +38,7 @@ _start:
 	cmp $MULTIBOOT2_MAGIC, %eax # compare EAX to multiboot2 magic
 	jne .L_start_no_mb2 # jump to failure label if not equal
 
-	mov (__ldsym__stack_top), %esp # setup stack pointer
+	mov (__ldsym__kernel_stack_top), %esp # setup stack pointer
 
 	push %ebx # EBX stores pointer to multiboot2 info, pass it as an argument
 	call _mb2_start # call _mb2_start entry

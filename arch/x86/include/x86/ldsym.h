@@ -9,37 +9,19 @@ extern "C" {
 
 /* Link defined symbol declarations go here. */
 
-DECLARE_LDSYM(kernel_i386_text_start_vma);
-DECLARE_LDSYM(kernel_i386_text_start_lma);
-DECLARE_LDSYM(kernel_i386_text_size);
-
-DECLARE_LDSYM(kernel_i386_rodata_start_vma);
-DECLARE_LDSYM(kernel_i386_rodata_start_lma);
-DECLARE_LDSYM(kernel_i386_rodata_size);
-
-DECLARE_LDSYM(kernel_i386_data_start_vma);
-DECLARE_LDSYM(kernel_i386_data_start_lma);
-DECLARE_LDSYM(kernel_i386_data_size);
+DECLARE_SECTION_LDSYMS(i386_text);
+DECLARE_SECTION_LDSYMS(i386_rodata);
+DECLARE_SECTION_LDSYMS(i386_data);
 
 #if CONFIG_ARCH == ARCH_x86_64
-	DECLARE_LDSYM(kernel_x86_64_text_start_vma);
-	DECLARE_LDSYM(kernel_x86_64_text_start_lma);
-	DECLARE_LDSYM(kernel_x86_64_text_size);
-
-	DECLARE_LDSYM(kernel_x86_64_rodata_start_vma);
-	DECLARE_LDSYM(kernel_x86_64_rodata_start_lma);
-	DECLARE_LDSYM(kernel_x86_64_rodata_size);
-
-	DECLARE_LDSYM(kernel_x86_64_data_start_vma);
-	DECLARE_LDSYM(kernel_x86_64_data_start_lma);
-	DECLARE_LDSYM(kernel_x86_64_data_size);
+	DECLARE_SECTION_LDSYMS(x86_64_text);
+	DECLARE_SECTION_LDSYMS(x86_64_rodata);
+	DECLARE_SECTION_LDSYMS(x86_64_data);
 
 	DECLARE_LDSYM(kernel_x86_64_entry);
 #endif
 
-DECLARE_LDSYM(kernel_stack_start_vma);
-DECLARE_LDSYM(kernel_stack_start_lma);
-DECLARE_LDSYM(kernel_stack_size);
+DECLARE_SECTION_LDSYMS(stack);
 
 #ifdef __cplusplus
 }

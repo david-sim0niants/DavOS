@@ -1,18 +1,16 @@
 #ifndef __LDSYM_H__
 #define __LDSYM_H__
 
-#ifndef __ASSEMBLER__
-
 #include <stdint.h>
 
 #define DECLARE_LDSYM(name) \
-extern uint64_t __ldsym__##name __attribute__((section(".ldsym")))
+extern uint64_t __ldsym__##name __attribute__((section(".ldsym"))); \
+extern void *__##name;
 
-#else
-
-#define DECLARE_LDSYM(name) .globl __ldsym__##name
-
-#endif // __ASSEMBLER__
+#define DECLARE_SECTION_LDSYMS(name) \
+DECLARE_LDSYM(kernel_##name##_vma) \
+DECLARE_LDSYM(kernel_##name##_lma) \
+DECLARE_LDSYM(kernel_##name##_size) \
 
 #ifdef __cplusplus
 extern "C" {
@@ -20,32 +18,19 @@ extern "C" {
 
 /* Link defined symbol declarations go here. */
 
-DECLARE_LDSYM(stack_top);
+DECLARE_LDSYM(kernel_stack_top);
 
 DECLARE_LDSYM(kernel_image_start_vma);
 DECLARE_LDSYM(kernel_image_start_lma);
 DECLARE_LDSYM(kernel_image_end_vma);
 DECLARE_LDSYM(kernel_image_end_lma);
 
-DECLARE_LDSYM(kernel_ldsym_start_vma);
-DECLARE_LDSYM(kernel_ldsym_start_lma);
-DECLARE_LDSYM(kernel_ldsym_size);
-
-DECLARE_LDSYM(kernel_text_start_vma);
-DECLARE_LDSYM(kernel_text_start_lma);
-DECLARE_LDSYM(kernel_text_size);
-
-DECLARE_LDSYM(kernel_bss_start_vma);
-DECLARE_LDSYM(kernel_bss_start_lma);
-DECLARE_LDSYM(kernel_bss_size);
-
-DECLARE_LDSYM(kernel_rodata_start_vma);
-DECLARE_LDSYM(kernel_rodata_start_lma);
-DECLARE_LDSYM(kernel_rodata_size);
-
-DECLARE_LDSYM(kernel_data_start_vma);
-DECLARE_LDSYM(kernel_data_start_lma);
-DECLARE_LDSYM(kernel_data_size);
+DECLARE_SECTION_LDSYMS(ldsym)
+DECLARE_SECTION_LDSYMS(text)
+DECLARE_SECTION_LDSYMS(bss)
+DECLARE_SECTION_LDSYMS(rodata)
+DECLARE_SECTION_LDSYMS(data)
+DECLARE_SECTION_LDSYMS(init_array)
 
 DECLARE_LDSYM(kernel_main);
 

@@ -5,14 +5,32 @@
 #define SECTION_ALIGNMENT 4K
 #endif
 
-#define DEFINE_LDSYM(name, value) \
+#define DEFINE_LDSYM_NULL(name) \
+	PROVIDE(__ldsym__##name = .); \
+	QUAD(0); \
+
+#define DEFINE_LDSYM(name) \
+	PROVIDE(__ldsym__##name = .); \
+	QUAD(__##name); \
+
+#define DEFINE_LDSYM_CUSTOM(name, value) \
 	PROVIDE(__ldsym__##name = .); \
 	QUAD(value); \
 
+#define DEFINE_SECTION_LDSYMS(name)\
+	DEFINE_LDSYM(kernel_##name##_vma) \
+	DEFINE_LDSYM(kernel_##name##_lma) \
+	DEFINE_LDSYM(kernel_##name##_size) \
+
+#define DEFINE_SECTION_LDSYMS_NULL(name)\
+	DEFINE_LDSYM_NULL(kernel_##name##_vma) \
+	DEFINE_LDSYM_NULL(kernel_##name##_lma) \
+	DEFINE_LDSYM_NULL(kernel_##name##_size) \
+
 #define DEFINE_SECTION_START(name, lma, vma) \
 	. = ALIGN(SECTION_ALIGNMENT); \
-	SECTION_START_VMA(name) = vma; \
-	SECTION_START_LMA(name) = lma; \
+	SECTION_VMA(name) = vma; \
+	SECTION_LMA(name) = lma; \
 
 #define DEFINE_SECTION_SIZE(name, size) \
 	. = ALIGN(SECTION_ALIGNMENT); \
@@ -20,18 +38,20 @@
 
 #define DEFINE_SECTION(name, ...) \
 	. = ALIGN(SECTION_ALIGNMENT); \
-	DEFINE_SECTION_START(name, . - __TOT_HOLE_SIZE, .) \
+	DEFINE_SECTION_START(name, . - __tot_hole_size, .) \
 	__VA_ARGS__ \
-	DEFINE_SECTION_SIZE(name, . - SECTION_START_VMA(name))
+	DEFINE_SECTION_SIZE(name, . - SECTION_VMA(name))
+
 
 #define SET_HOLE(size) \
-	PROVIDE(__TOT_HOLE_SIZE = size);
-#define ADD_HOLE(delta_size) \
-	__TOT_HOLE_SIZE += delta_size;
+	PROVIDE(__tot_hole_size = size);
 
-#define SECTION_START_VMA(name) __KERNEL_##name##_START_VMA
-#define SECTION_START_LMA(name) __KERNEL_##name##_START_LMA
-#define SECTION_SIZE(name) __KERNEL_##name##_SIZE
+#define ADD_HOLE(delta_size) \
+	__tot_hole_size += delta_size;
+
+#define SECTION_VMA(name) __kernel_##name##_vma
+#define SECTION_LMA(name) __kernel_##name##_lma
+#define SECTION_SIZE(name) __kernel_##name##_size
 
 
 #endif

@@ -8,11 +8,11 @@ SECTIONS
 	. = 1M;
 	SET_HOLE(0)
 
-	__KERNEL_IMAGE_START_LMA = .;
-	__KERNEL_IMAGE_START_VMA = .;
+	__kernel_image_start_lma = .;
+	__kernel_image_start_vma = .;
 
 	DEFINE_SECTION (
-		I386_TEXT,
+		i386_text,
 		.multiboot2_header :
 		{
 			KEEP(*(.multiboot2_header))
@@ -31,7 +31,7 @@ SECTIONS
 	)
 
 	DEFINE_SECTION (
-		I386_RODATA,
+		i386_rodata,
 		.rodata : ALIGN(4K)
 		{
 			*(.rodata)
@@ -40,7 +40,7 @@ SECTIONS
 	)
 
 	DEFINE_SECTION (
-		I386_DATA,
+		i386_data,
 		.data : ALIGN(4K)
 		{
 			*(.data)
@@ -48,90 +48,58 @@ SECTIONS
 	)
 
 	DEFINE_SECTION (
-		LDSYM,
+		ldsym,
 		.ldsym : ALIGN(4K)
 		{
-			DEFINE_LDSYM(stack_top, 		__STACK_TOP)
-			DEFINE_LDSYM(kernel_image_start_vma, 	__KERNEL_IMAGE_START_VMA)
-			DEFINE_LDSYM(kernel_image_start_lma, 	__KERNEL_IMAGE_START_LMA)
-			DEFINE_LDSYM(kernel_image_end_vma, 	__KERNEL_IMAGE_END_VMA)
-			DEFINE_LDSYM(kernel_image_end_lma, 	__KERNEL_IMAGE_END_LMA)
+			DEFINE_LDSYM(kernel_stack_top)
+			DEFINE_LDSYM(kernel_image_start_vma)
+			DEFINE_LDSYM(kernel_image_start_lma)
+			DEFINE_LDSYM(kernel_image_end_vma)
+			DEFINE_LDSYM(kernel_image_end_lma)
 
-			DEFINE_LDSYM(kernel_i386_text_start_vma,SECTION_START_VMA(I386_TEXT))
-			DEFINE_LDSYM(kernel_i386_text_start_lma,SECTION_START_LMA(I386_TEXT))
-			DEFINE_LDSYM(kernel_i386_text_size, 	SECTION_SIZE(I386_TEXT))
-
-			DEFINE_LDSYM(kernel_i386_rodata_start_vma, 	SECTION_START_VMA(I386_RODATA))
-			DEFINE_LDSYM(kernel_i386_rodata_start_lma, 	SECTION_START_LMA(I386_RODATA))
-			DEFINE_LDSYM(kernel_i386_rodata_size, 	SECTION_SIZE(I386_RODATA))
-
-			DEFINE_LDSYM(kernel_i386_data_start_vma,SECTION_START_VMA(I386_DATA))
-			DEFINE_LDSYM(kernel_i386_data_start_lma,SECTION_START_LMA(I386_DATA))
-			DEFINE_LDSYM(kernel_i386_data_size, 	SECTION_SIZE(I386_DATA))
-
-			DEFINE_LDSYM(kernel_ldsym_start_vma, 	SECTION_START_VMA(LDSYM))
-			DEFINE_LDSYM(kernel_ldsym_start_lma, 	SECTION_START_LMA(LDSYM))
-			DEFINE_LDSYM(kernel_ldsym_size, 	SECTION_SIZE(LDSYM))
-
-			DEFINE_LDSYM(kernel_stack_start_vma, 	SECTION_START_VMA(STACK))
-			DEFINE_LDSYM(kernel_stack_start_lma, 	SECTION_START_LMA(STACK))
-			DEFINE_LDSYM(kernel_stack_size, 	SECTION_SIZE(STACK))
+			DEFINE_SECTION_LDSYMS(i386_text)
+			DEFINE_SECTION_LDSYMS(i386_rodata)
+			DEFINE_SECTION_LDSYMS(i386_data)
+			DEFINE_SECTION_LDSYMS(ldsym)
+			DEFINE_SECTION_LDSYMS(stack)
 
 #if CONFIG_ARCH == ARCH_x86_64
-			DEFINE_LDSYM(kernel_x86_64_text_start_vma, 	0)
-			DEFINE_LDSYM(kernel_x86_64_text_start_lma, 	0)
-			DEFINE_LDSYM(kernel_x86_64_text_size, 		0)
+			DEFINE_SECTION_LDSYMS_NULL(x86_64_text)
+			DEFINE_SECTION_LDSYMS_NULL(x86_64_rodata)
+			DEFINE_SECTION_LDSYMS_NULL(x86_64_data)
 
-			DEFINE_LDSYM(kernel_x86_64_rodata_start_vma, 	0)
-			DEFINE_LDSYM(kernel_x86_64_rodata_start_lma, 	0)
-			DEFINE_LDSYM(kernel_x86_64_rodata_size, 	0)
-
-			DEFINE_LDSYM(kernel_x86_64_data_start_vma, 	0)
-			DEFINE_LDSYM(kernel_x86_64_data_start_lma, 	0)
-			DEFINE_LDSYM(kernel_x86_64_data_size, 		0)
-
-			DEFINE_LDSYM(kernel_x86_64_entry, 		__FAKE_ENTRY)
+			DEFINE_LDSYM_CUSTOM(kernel_x86_64_entry, __fake_entry)
 #endif
 
-			DEFINE_LDSYM(kernel_text_start_vma, 	0)
-			DEFINE_LDSYM(kernel_text_start_lma, 	0)
-			DEFINE_LDSYM(kernel_text_size, 		0)
+			DEFINE_SECTION_LDSYMS_NULL(text)
+			DEFINE_SECTION_LDSYMS_NULL(bss)
+			DEFINE_SECTION_LDSYMS_NULL(rodata)
+			DEFINE_SECTION_LDSYMS_NULL(data)
+			DEFINE_SECTION_LDSYMS_NULL(init_array)
 
-			DEFINE_LDSYM(kernel_bss_start_vma, 	0)
-			DEFINE_LDSYM(kernel_bss_start_lma, 	0)
-			DEFINE_LDSYM(kernel_bss_size, 		0)
-
-			DEFINE_LDSYM(kernel_rodata_start_vma, 	0)
-			DEFINE_LDSYM(kernel_rodata_start_lma, 	0)
-			DEFINE_LDSYM(kernel_rodata_size, 	0)
-
-			DEFINE_LDSYM(kernel_data_start_vma, 	0)
-			DEFINE_LDSYM(kernel_data_start_lma, 	0)
-			DEFINE_LDSYM(kernel_data_size, 		0)
-
-			DEFINE_LDSYM(kernel_main, 		__FAKE_ENTRY)
+			DEFINE_LDSYM_CUSTOM(kernel_main, __fake_entry)
 		}
 	)
 
 	DEFINE_SECTION (
-		STACK,
+		stack,
 		.stack BLOCK(CONFIG_STACK_SIZE) (NOLOAD) : ALIGN(4K)
 		{
 			. += CONFIG_STACK_SIZE;
 		}
 	)
 
-	PROVIDE(__STACK_TOP = .);
+	PROVIDE(__kernel_stack_top = .);
 
-	PROVIDE(__FAKE_ENTRY = .);
+	PROVIDE(__fake_entry = .);
 	.fake_entry :
 	{
 		KEEP(*(.fake_entry))
 	}
-	PROVIDE(__FAKE_ENTRY_SIZE = . - __FAKE_ENTRY);
+	PROVIDE(__fake_entry_size = . - __fake_entry);
 
-	__KERNEL_IMAGE_END_VMA = .;
-	__KERNEL_IMAGE_END_LMA = .;
+	__kernel_image_end_vma = .;
+	__kernel_image_end_lma = .;
 
 	/DISCARD/ :
 	{

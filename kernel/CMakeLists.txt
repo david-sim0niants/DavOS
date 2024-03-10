@@ -7,5 +7,5 @@ endif ()
 # Build the main, independent from its entry portion of the kernel.
 set(TARGET_NAME kernel_main)
 add_library(${TARGET_NAME} INTERFACE)
-target_sources(${TARGET_NAME} INTERFACE main.cc)
+target_sources(${TARGET_NAME} INTERFACE main.cc runtime.cc)
 target_link_libraries(${TARGET_NAME} INTERFACE kernel_arch)

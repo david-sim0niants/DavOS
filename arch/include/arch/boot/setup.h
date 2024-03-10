@@ -1,5 +1,5 @@
-#ifndef __ARCH_BOOT__SETUP_H__
-#define __ARCH_BOOT__SETUP_H__
+#ifndef _ARCH_BOOT__SETUP_H__
+#define _ARCH_BOOT__SETUP_H__
 
 #include <stddef.h>
 #include <stdint.h>
