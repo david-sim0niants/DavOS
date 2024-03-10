@@ -10,8 +10,8 @@ template<typename T, size_t N>
 struct Array {
 	T arr[N];
 
-	T *data();
-	const T *data() const;
+	constexpr T *data();
+	constexpr const T *data() const;
 	constexpr size_t size() const;
 
 	constexpr T& operator[](size_t i);
@@ -23,13 +23,13 @@ Array(T, Args...) -> Array<T, sizeof...(Args) + 1>;
 
 
 template<typename T, size_t N>
-T *Array<T, N>::data()
+constexpr T *Array<T, N>::data()
 {
 	return arr;
 }
 
 template<typename T, size_t N>
-const T *Array<T, N>::data() const
+constexpr const T *Array<T, N>::data() const
 {
 	return arr;
 }

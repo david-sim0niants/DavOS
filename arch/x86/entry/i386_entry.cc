@@ -188,17 +188,17 @@ static LocalErr identity_map_pages(BootInfo& boot_info, PageTable *page_table, u
 	if (e != PageMapErr::None)
 		return LocalErr::IdentityMapFail;
 
-	auto sections = kernel_image::get_sections();
-	for (size_t i = 0 ; i < sections.size(); ++i) {
-		const kernel_image::Section& section = sections[i];
-		map_info.linaddr_beg = section.lma_start;
-		map_info.phyaddr_beg = section.lma_start;
-		map_info.phyaddr_end = section.lma_start + section.size;
+	auto segments = kernel_image::get_ldsym_segments();
+	for (size_t i = 0 ; i < segments.size(); ++i) {
+		const auto& segment = segments[i];
+		map_info.linaddr_beg = (LineAddr)segment.lma_start;
+		map_info.phyaddr_beg = (PhysAddr)segment.lma_start;
+		map_info.phyaddr_end = (PhysAddr)(segment.lma_start + segment.size);
 		map_info.flags = PageEntryFlags::Global | PageEntryFlags::Supervisor
 			| kstd::switch_flag(PageEntryFlags::WriteAllowed,
-				kstd::test_flag(section.flags, kstd::SectionFlag::Write))
+				kstd::test_flag(segment.flags, kernel_image::SegmentFlag::Write))
 			| kstd::switch_flag(PageEntryFlags::ExecuteDisabled,
-				!kstd::test_flag(section.flags, kstd::SectionFlag::Executable));
+				!kstd::test_flag(segment.flags, kernel_image::SegmentFlag::Executable));
 		e = map_pages__free_mem(boot_info, map_info, page_table, min_addr);
 		if (e != PageMapErr::None)
 			return LocalErr::IdentityMapFail;
@@ -210,19 +210,18 @@ static LocalErr identity_map_pages(BootInfo& boot_info, PageTable *page_table, u
 static LocalErr map_kernel_memory(BootInfo& boot_info, PageTable *page_table, uintptr_t& min_addr)
 {
 	utils::VGA_OStream os;
-	auto sections = kernel_image::get_main_sections();
-	for (size_t i = 0 ; i < sections.size(); ++i) {
-		const kernel_image::Section& section = sections[i];
-		PageMappingInfo map_info {
-			.linaddr_beg = page_fit_linear_addr(section.vma_start),
-			.phyaddr_beg = section.lma_start,
-			.phyaddr_end = section.lma_start + section.size,
-			.flags = PageEntryFlags::Global | PageEntryFlags::Supervisor
-				| kstd::switch_flag(PageEntryFlags::WriteAllowed,
-					kstd::test_flag(section.flags, kstd::SectionFlag::Write))
-				| kstd::switch_flag(PageEntryFlags::ExecuteDisabled,
-					!kstd::test_flag(section.flags, kstd::SectionFlag::Executable)),
-		};
+	auto segments = kernel_image::get_ldsym_main_segments();
+	for (size_t i = 0 ; i < segments.size(); ++i) {
+		const auto& segment = segments[i];
+		PageMappingInfo map_info;
+		map_info.linaddr_beg = page_fit_linear_addr(segment.vma_start);
+		map_info.phyaddr_beg = (PhysAddr)segment.lma_start;
+		map_info.phyaddr_end = (PhysAddr)(segment.lma_start + segment.size);
+		map_info.flags = PageEntryFlags::Global | PageEntryFlags::Supervisor
+			| kstd::switch_flag(PageEntryFlags::WriteAllowed,
+				kstd::test_flag(segment.flags, kernel_image::SegmentFlag::Write))
+			| kstd::switch_flag(PageEntryFlags::ExecuteDisabled,
+				!kstd::test_flag(segment.flags, kernel_image::SegmentFlag::Executable));
 		PageMapErr e = map_pages__free_mem(boot_info, map_info, page_table, min_addr);
 		if (e != PageMapErr::None)
 			return LocalErr::KernelMapFail;

@@ -204,7 +204,7 @@ private:
 
 	/* Check if linear and physical addresses will overflow during mapping. */
 	static PageMapErr check_overflow(LineAddr linaddr_beg, PhysAddr phyaddr_beg,
-			LineAddr linaddr_end);
+			PhysAddr phyaddr_end);
 
 	/* Get a page table that the given entry links to if it does, otherwise
 	 * create, map and get a new page table using the given free memory range. */

@@ -62,6 +62,7 @@ get_null_file(cpp)
 add_executable(${TARGET_NAME} ${NULL_FILE})
 # Link the binaries.
 target_link_libraries(${TARGET_NAME} PRIVATE ${LINK_INPUTS})
+target_compile_definitions(${TARGET_NAME} PRIVATE __KERNEL_ENTRY__)
 
 if (${CONFIG_ARCH} STREQUAL x86_64)
 	# This is for the null file.

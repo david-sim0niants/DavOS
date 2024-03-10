@@ -1,5 +1,7 @@
 #include <kernel/runtime.h>
 
+#include <kernel_image.h>
+
 #include <stddef.h>
 
 
@@ -11,16 +13,14 @@ extern "C" void __cxa_atexit()
 	// do nothing for now
 }
 
-extern "C" void *__kernel_init_array_vma, *__kernel_init_array_unaligned_size;
-
 namespace kernel {
 
 void static_init()
 {
-	void (**init_array)(void) = reinterpret_cast<void (**)(void)>(&__kernel_init_array_vma);
-	size_t init_array_size = (size_t)(&__kernel_init_array_unaligned_size) / sizeof(void *);
-	for (auto fn = init_array; init_array_size; --init_array_size, ++fn)
-		(*fn)();
+	auto init_array = reinterpret_cast<void (* const*)(void)>(kernel_image::init_array_section.vma_start);
+	size_t init_array_size = kernel_image::init_array_section.size / sizeof(void *);
+	for (int i = 0; i < init_array_size; ++i)
+		init_array[i]();
 }
 
 }

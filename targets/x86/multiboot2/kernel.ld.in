@@ -1,4 +1,6 @@
 #include <ld/ldsym.h>
+#include <ld/segment.h>
+#include <ld/section.h>
 #include <config.h>
 
 ENTRY(_start)
@@ -11,103 +13,121 @@ SECTIONS
 	__kernel_image_start_lma = .;
 	__kernel_image_start_vma = .;
 
-	DEFINE_SECTION (
+	DEFINE_SEGMENT (
 		i386_text,
-
-		.i386.multiboot2_header :
-		{
-			KEEP(*(.i386.multiboot2_header))
-		}
+		DEFINE_SECTION (
+			i386_multiboot2_header,
+			.i386.multiboot2_header :
+			{
+				KEEP(*(.i386.multiboot2_header))
+			}
+		)
 
 		_start = ADDR(.i386.text);
-		.i386.text : ALIGN(16)
-		{
-			KEEP(*(.i386.text))
-		}
+
+		DEFINE_SECTION (
+			i386_text,
+			.i386.text : ALIGN(16)
+			{
+				KEEP(*(.i386.text))
+			}
+		)
 	)
 
-	DEFINE_SECTION (
-		i386_rodata,
-		.i386.rodata : ALIGN(4K)
-		{
-			KEEP(*(.i386.rodata))
-		}
-	)
-
-	DEFINE_SECTION (
+	DEFINE_SEGMENT (
 		i386_data,
-		.i386.data : ALIGN(4K)
-		{
-			KEEP(*(.i386.data))
-		}
+		DEFINE_SECTION (
+			i386_data,
+			.i386.data :
+			{
+				KEEP(*(.i386.data))
+			}
+		)
 	)
 
-	DEFINE_SECTION (
-		ldsym,
-		.ldsym : ALIGN(4K)
-		{
-			DEFINE_LDSYM(kernel_stack_top)
-			DEFINE_LDSYM(kernel_image_start_vma)
-			DEFINE_LDSYM(kernel_image_start_lma)
-			DEFINE_LDSYM(kernel_image_end_vma)
-			DEFINE_LDSYM(kernel_image_end_lma)
+	DEFINE_SEGMENT (
+		i386_rodata,
+		DEFINE_SECTION (
+			i386_rodata,
+			.i386.rodata :
+			{
+				KEEP(*(.i386.rodata))
+			}
+		)
 
-			DEFINE_SECTION_LDSYMS(i386_text)
-			DEFINE_SECTION_LDSYMS(i386_rodata)
-			DEFINE_SECTION_LDSYMS(i386_data)
-			DEFINE_SECTION_LDSYMS(ldsym)
-			DEFINE_SECTION_LDSYMS(stack)
+		DEFINE_SECTION (
+			ldsym,
+			.ldsym :
+			{
+				DEFINE_LDSYM(kernel_stack_top)
+				DEFINE_LDSYM(kernel_image_start_vma)
+				DEFINE_LDSYM(kernel_image_start_lma)
+				DEFINE_LDSYM(kernel_image_end_vma)
+				DEFINE_LDSYM(kernel_image_end_lma)
+
+				DEFINE_SEGMENT_LDSYMS(stack)
 
 #if CONFIG_ARCH == ARCH_x86_64
-			DEFINE_SECTION_LDSYMS(x86_64_text)
-			DEFINE_SECTION_LDSYMS(x86_64_rodata)
-			DEFINE_SECTION_LDSYMS(x86_64_data)
+				DEFINE_SEGMENT_LDSYMS(x86_64_text)
+				DEFINE_SEGMENT_LDSYMS(x86_64_rodata)
+				DEFINE_SEGMENT_LDSYMS(x86_64_data)
 
-			DEFINE_LDSYM_CUSTOM(kernel_x86_64_entry, _x86_64_entry)
+				DEFINE_LDSYM_CUSTOM(kernel_x86_64_entry, _x86_64_entry)
 #endif
 
-			DEFINE_SECTION_LDSYMS(text)
-			DEFINE_SECTION_LDSYMS(bss)
-			DEFINE_SECTION_LDSYMS(rodata)
-			DEFINE_SECTION_LDSYMS(data)
-			DEFINE_SECTION_LDSYMS(init_array)
+				DEFINE_SEGMENT_LDSYMS(text)
+				DEFINE_SEGMENT_LDSYMS(rodata)
+				DEFINE_SEGMENT_LDSYMS(data)
 
-			DEFINE_LDSYM_CUSTOM(kernel_main, main)
-		}
+				DEFINE_LDSYM_CUSTOM(kernel_main, main)
+			}
+		)
 	)
 
 #if CONFIG_ARCH == ARCH_x86_64
-	DEFINE_SECTION (
+	DEFINE_SEGMENT (
 		x86_64_text,
-		.x86_64.text : ALIGN(4K)
-		{
-			KEEP(*(.x86_64.text))
-		}
+		DEFINE_SECTION (
+			x86_64_text,
+			.x86_64.text :
+			{
+				KEEP(*(.x86_64.text))
+			}
+		)
 	)
 
-	DEFINE_SECTION (
-		x86_64_rodata,
-		.x86_64.rodata : ALIGN(4K)
-		{
-			KEEP(*(.x86_64.rodata))
-		}
-	)
-
-	DEFINE_SECTION (
+	DEFINE_SEGMENT (
 		x86_64_data,
-		.x86_64.data : ALIGN(4K)
-		{
-			KEEP(*(.x86_64.data))
-		}
+		DEFINE_SECTION (
+			x86_64_data,
+			.x86_64.data :
+			{
+				KEEP(*(.x86_64.data))
+			}
+		)
+	)
+
+	DEFINE_SEGMENT (
+		x86_64_rodata,
+		DEFINE_SECTION (
+			x86_64_rodata,
+			.x86_64.rodata :
+			{
+				KEEP(*(.x86_64.rodata))
+			}
+		)
 	)
 #endif
 
-	DEFINE_SECTION (
+	DEFINE_SEGMENT (
 		stack,
-		.stack BLOCK(CONFIG_STACK_SIZE) (NOLOAD) : ALIGN(4K)
-		{
-			. += CONFIG_STACK_SIZE;
-		}
+		DEFINE_SECTION (
+			stack,
+			.stack (NOLOAD) : ALIGN(CONFIG_STACK_ALIGNMENT)
+			{
+				. += CONFIG_STACK_SIZE;
+			}
+		)
 	)
 
 	__kernel_stack_top = .;
@@ -119,54 +139,60 @@ SECTIONS
 #else
 	#define KERNEL_TEXT_START_VMA VM_SPLIT
 #endif
-	SECTION_VMA(text) = KERNEL_TEXT_START_VMA;
+	ADD_HOLE(KERNEL_TEXT_START_VMA - .)
+	. = KERNEL_TEXT_START_VMA;
 
-	ADD_HOLE(SECTION_VMA(text) - .)
-	. = SECTION_VMA(text);
-
-	DEFINE_SECTION (
+	DEFINE_SEGMENT (
 		text,
-		.text : AT(SECTION_LMA(text))
-		{
-			KEEP(*(.text))
-			KEEP(*(.text.*))
-		}
+		DEFINE_SECTION (
+			text,
+			.text : AT(SECTION_LMA(text))
+			{
+				KEEP(*(.text))
+				KEEP(*(.text.*))
+			}
+		)
 	)
 
-	DEFINE_SECTION (
-		rodata,
-		.rodata : AT(SECTION_LMA(rodata))
-		{
-			KEEP(*(.rodata))
-			KEEP(*(.rodata.*))
-		}
-	)
-
-	DEFINE_SECTION (
+	DEFINE_SEGMENT (
 		data,
-		.data : AT(SECTION_LMA(data))
-		{
-			KEEP(*(.data))
-			KEEP(*(.data.*))
-		}
+		DEFINE_SECTION (
+			data,
+			.data : AT(SECTION_LMA(data))
+			{
+				KEEP(*(.data))
+				KEEP(*(.data.*))
+			}
+		)
+
+		DEFINE_SECTION (
+			bss,
+			.bss (NOLOAD) : AT(SECTION_LMA(bss))
+			{
+				KEEP(*(.bss))
+				KEEP(*(.bss.*))
+			}
+		)
 	)
 
-	DEFINE_SECTION (
-		bss,
-		.bss (NOLOAD) : AT(SECTION_LMA(bss))
-		{
-			KEEP(*(.bss))
-			KEEP(*(.bss.*))
-		}
-	)
+	DEFINE_SEGMENT (
+		rodata,
+		DEFINE_SECTION (
+			rodata,
+			.rodata : AT(SECTION_LMA(rodata))
+			{
+				KEEP(*(.rodata))
+				KEEP(*(.rodata.*))
+			}
+		)
 
-	DEFINE_SECTION(
-		init_array,
-		.init_array : AT(SECTION_LMA(init_array))
-		{
-			KEEP(*(.init_array))
-		}
-		PROVIDE(__kernel_init_array_unaligned_size = . - SECTION_VMA(init_array));
+		DEFINE_SECTION(
+			init_array,
+			.init_array : AT(SECTION_LMA(init_array))
+			{
+				KEEP(*(.init_array))
+			}
+		)
 	)
 
 	__kernel_image_end_vma = .;

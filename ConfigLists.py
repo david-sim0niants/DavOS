@@ -119,6 +119,18 @@ def _STACK_SIZE_check_value(stack_size:MemSize, config: dict):
         return True, None
 
 
+def _STACK_ALIGNMENT_default_value(config: dict):
+    return config['PAGE_SIZE']
+
+
+def _STACK_ALIGNMENT_check_value(stack_alignment:MemSize, config: dict):
+    page_size = config['PAGE_SIZE']
+    if stack_alignment % page_size != 0:
+        return False, 'STACK_ALIGNMENT must be divisible by PAGE_SIZE.'
+    else:
+        return True, None
+
+
 CONFIGS = {
     'ARCH': {
         'description': 'The target architecture the kernel will compile to.',
@@ -160,6 +172,13 @@ CONFIGS = {
         'depends': ['PAGE_SIZE'],
         'default_value': _STACK_SIZE_default_value,
         'value_checker': _STACK_SIZE_check_value,
+    },
+    'STACK_ALIGNMENT': {
+        'description': 'Kernel stack alignment.',
+        'type': MemSize,
+        'depends': ['PAGE_SIZE'],
+        'default_value': _STACK_ALIGNMENT_default_value,
+        'value_checker': _STACK_ALIGNMENT_check_value,
     },
     'MULTIBOOT2': {
         'description': 'Enabling this makes kernel multiboot2 specification comliant.',

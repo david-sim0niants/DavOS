@@ -40,6 +40,7 @@ endif()
 message(STATUS "Target architecture: ${CONFIG_ARCH} ${CONFIG_ARCH_BITNESS}bit")
 
 decl_config(CONFIG_STACK_SIZE 0x2000)
+decl_config(CONFIG_STACK_ALIGNMENT 0x1000)
 
 if (CONFIG_ARCH_BITNESS EQUAL 64)
 	decl_config(CONFIG_VM_SPLIT 0x800000000000)

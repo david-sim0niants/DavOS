@@ -1,4 +1,6 @@
 #include <ld/ldsym.h>
+#include <ld/segment.h>
+#include <ld/section.h>
 #include <config.h>
 
 ENTRY(_start)
@@ -11,82 +13,91 @@ SECTIONS
 	__kernel_image_start_lma = .;
 	__kernel_image_start_vma = .;
 
-	DEFINE_SECTION (
+	DEFINE_SEGMENT (
 		i386_text,
-		.multiboot2_header :
-		{
-			KEEP(*(.multiboot2_header))
-		}
+		DEFINE_SECTION (
+			multiboot2_header,
+			.multiboot2_header :
+			{
+				KEEP(*(.multiboot2_header))
+			}
+		)
 
 		. += 1; /* Avoiding some stupid bug in linker or something I don't understand.
 			 Without this .multiboot2_header and .text sections appear to start
 			 at the same address besides they are both non-empty sections. */
 
-		.text : ALIGN(16)
-		{
-			*(.text_entry)
-			*(.text)
-			*(.text.*)
-		}
+		DEFINE_SECTION (
+			i386_text,
+			.text : ALIGN(16)
+			{
+				*(.text_entry)
+				*(.text)
+				*(.text.*)
+			}
+		)
 	)
 
-	DEFINE_SECTION (
-		i386_rodata,
-		.rodata : ALIGN(4K)
-		{
-			*(.rodata)
-			*(.rodata.*)
-		}
-	)
-
-	DEFINE_SECTION (
+	DEFINE_SEGMENT (
 		i386_data,
-		.data : ALIGN(4K)
-		{
-			*(.data)
-		}
+		DEFINE_SECTION (
+			i386_data,
+			.data :
+			{
+				*(.data)
+			}
+		)
 	)
 
-	DEFINE_SECTION (
-		ldsym,
-		.ldsym : ALIGN(4K)
-		{
-			DEFINE_LDSYM(kernel_stack_top)
-			DEFINE_LDSYM(kernel_image_start_vma)
-			DEFINE_LDSYM(kernel_image_start_lma)
-			DEFINE_LDSYM(kernel_image_end_vma)
-			DEFINE_LDSYM(kernel_image_end_lma)
+	DEFINE_SEGMENT (
+		i386_rodata,
+		DEFINE_SECTION (
+			i386_rodata,
+			.rodata :
+			{
+				*(.rodata)
+				*(.rodata.*)
+			}
+		)
 
-			DEFINE_SECTION_LDSYMS(i386_text)
-			DEFINE_SECTION_LDSYMS(i386_rodata)
-			DEFINE_SECTION_LDSYMS(i386_data)
-			DEFINE_SECTION_LDSYMS(ldsym)
-			DEFINE_SECTION_LDSYMS(stack)
+		DEFINE_SECTION (
+			ldsym,
+			.ldsym :
+			{
+				DEFINE_LDSYM(kernel_stack_top)
+				DEFINE_LDSYM(kernel_image_start_vma)
+				DEFINE_LDSYM(kernel_image_start_lma)
+				DEFINE_LDSYM(kernel_image_end_vma)
+				DEFINE_LDSYM(kernel_image_end_lma)
+
+				DEFINE_SEGMENT_LDSYMS(stack)
 
 #if CONFIG_ARCH == ARCH_x86_64
-			DEFINE_SECTION_LDSYMS_NULL(x86_64_text)
-			DEFINE_SECTION_LDSYMS_NULL(x86_64_rodata)
-			DEFINE_SECTION_LDSYMS_NULL(x86_64_data)
+				DEFINE_SEGMENT_LDSYMS_NULL(x86_64_text)
+				DEFINE_SEGMENT_LDSYMS_NULL(x86_64_rodata)
+				DEFINE_SEGMENT_LDSYMS_NULL(x86_64_data)
 
-			DEFINE_LDSYM_CUSTOM(kernel_x86_64_entry, __fake_entry)
+				DEFINE_LDSYM_CUSTOM(kernel_x86_64_entry, __fake_entry)
 #endif
 
-			DEFINE_SECTION_LDSYMS_NULL(text)
-			DEFINE_SECTION_LDSYMS_NULL(bss)
-			DEFINE_SECTION_LDSYMS_NULL(rodata)
-			DEFINE_SECTION_LDSYMS_NULL(data)
-			DEFINE_SECTION_LDSYMS_NULL(init_array)
+				DEFINE_SEGMENT_LDSYMS_NULL(text)
+				DEFINE_SEGMENT_LDSYMS_NULL(rodata)
+				DEFINE_SEGMENT_LDSYMS_NULL(data)
 
-			DEFINE_LDSYM_CUSTOM(kernel_main, __fake_entry)
-		}
+				DEFINE_LDSYM_CUSTOM(kernel_main, __fake_entry)
+			}
+		)
 	)
 
-	DEFINE_SECTION (
+	DEFINE_SEGMENT (
 		stack,
-		.stack BLOCK(CONFIG_STACK_SIZE) (NOLOAD) : ALIGN(4K)
-		{
-			. += CONFIG_STACK_SIZE;
-		}
+		DEFINE_SECTION (
+			stack,
+			.stack (NOLOAD) : ALIGN(CONFIG_STACK_ALIGNMENT)
+			{
+				. += CONFIG_STACK_SIZE;
+			}
+		)
 	)
 
 	PROVIDE(__kernel_stack_top = .);

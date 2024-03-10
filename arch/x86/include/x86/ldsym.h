@@ -9,19 +9,13 @@ extern "C" {
 
 /* Link defined symbol declarations go here. */
 
-DECLARE_SECTION_LDSYMS(i386_text);
-DECLARE_SECTION_LDSYMS(i386_rodata);
-DECLARE_SECTION_LDSYMS(i386_data);
-
 #if CONFIG_ARCH == ARCH_x86_64
-	DECLARE_SECTION_LDSYMS(x86_64_text);
-	DECLARE_SECTION_LDSYMS(x86_64_rodata);
-	DECLARE_SECTION_LDSYMS(x86_64_data);
+	DECLARE_SEGMENT_LDSYMS(x86_64_text);
+	DECLARE_SEGMENT_LDSYMS(x86_64_rodata);
+	DECLARE_SEGMENT_LDSYMS(x86_64_data);
 
 	DECLARE_LDSYM(kernel_x86_64_entry);
 #endif
-
-DECLARE_SECTION_LDSYMS(stack);
 
 #ifdef __cplusplus
 }

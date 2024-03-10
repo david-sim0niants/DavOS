@@ -185,7 +185,7 @@ template<int pml> PageMapErr
 PageTable_<pml>::check_overflow(LineAddr linaddr_beg, PhysAddr phyaddr_beg, PhysAddr phyaddr_end)
 {
 	if (phyaddr_beg > phyaddr_end
-	 || phyaddr_end >= (LineAddr(1)<< constants::max_possible_phyaddr_bits))
+	 || phyaddr_end >= (PhysAddr(1)<< constants::max_possible_phyaddr_bits))
 		return PageMapErr::PhysicalAddressOverflow;
 
 	LineAddr linaddr_end;
